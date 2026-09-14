@@ -7,7 +7,7 @@ production items are deliberately outstanding — see [Known gaps](#known-gaps).
 
 - **Stack** — Next.js 14 (App Router) · TypeScript · Tailwind CSS · framer-motion
 - **Design brief** — `nextberry-labs-creative-direction.md` (kept outside this repo)
-- **Docs** — [Architecture](docs/ARCHITECTURE.md) · [Design system](docs/DESIGN_SYSTEM.md) · [Content](docs/CONTENT.md) · [Tooling](docs/TOOLING.md)
+- **Docs** — [Architecture](docs/ARCHITECTURE.md) · [Design system](docs/DESIGN_SYSTEM.md) · [The character](docs/CHARACTER.md) · [Content](docs/CONTENT.md) · [Tooling](docs/TOOLING.md)
 
 ---
 
@@ -29,6 +29,7 @@ npm run dev                  # http://localhost:3000
 | `npm run lint` | ESLint (next/core-web-vitals) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run shoot` | Visual QA — screenshots every section at desktop and mobile into `.screenshots/` |
+| `npm run shoot:face` | Asserts the section 04 character still tracks, blinks and respects reduced motion |
 
 > `npm run build` overwrites `.next`, which breaks a dev server that is already
 > running. Stop `npm run dev` first, or serve the build on another port.
@@ -72,13 +73,14 @@ app/               Routes, root layout, global CSS
 components/
   layout/          Page chrome — Navbar, Footer, ChapterRail, Leader, FilmGrain
   sections/        One component per narrative beat (see docs/ARCHITECTURE.md)
+    HowItsMade/    Section 04 — the creative director (see docs/CHARACTER.md)
   media/           FilmFrame, VideoLightbox
   primitives/      Section chassis, Reveal, FilmButton, UnderlineLink
 content/           All copy and data. No copy lives in components.
 lib/               cn(), motion tokens, YouTube helpers
-docs/              Architecture, design system, content guide
-scripts/           shoot.mjs — visual QA
-public/            Video, logos, founder and client portraits, favicons
+docs/              Architecture, design system, character, content, tooling
+scripts/           Visual QA, and the character asset pipeline
+public/            Video, logos, portraits, favicons, character layers
 ```
 
 **Two rules keep this maintainable:**
@@ -110,3 +112,8 @@ These are real and tracked, not oversights:
 - **Film titles and client names for films 3–6 are placeholders.** Real
   metadata is needed before launch.
 - **No analytics, no sitemap, no OG image.**
+- **`face-base.png` is 2.4 MB.** It is served through `next/image` as AVIF/WebP
+  at the rendered size, so the wire cost is far lower, but a properly exported
+  source would still be better.
+- **The `Explore →` affordance on each workflow stage does not lead anywhere
+  yet.** It needs either a destination or removal before launch.

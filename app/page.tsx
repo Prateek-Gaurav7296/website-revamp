@@ -1,7 +1,7 @@
 import { CinematicHero } from '@/components/sections/CinematicHero';
 import { Manifesto } from '@/components/sections/Manifesto';
 import { WorkShowcase } from '@/components/sections/WorkShowcase';
-import { ProcessSequence } from '@/components/sections/ProcessSequence';
+import { HowItsMade } from '@/components/sections/HowItsMade';
 import { ProofStrip } from '@/components/sections/ProofStrip';
 import { TestimonialFullbleed } from '@/components/sections/TestimonialFullbleed';
 import { TeamSection } from '@/components/sections/TeamSection';
@@ -17,7 +17,7 @@ export default function HomePage() {
       <CinematicHero />
       <Manifesto />
       <WorkShowcase />
-      <ProcessSequence />
+      <HowItsMade />
       <ProofStrip />
       <TestimonialFullbleed />
       <TeamSection />

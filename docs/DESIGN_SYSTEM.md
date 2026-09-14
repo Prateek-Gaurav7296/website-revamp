@@ -85,6 +85,7 @@ nothing else.
 | **Reveal** | Content resolving into frame, once | `Reveal`, `RevealLines`, `RevealFrame` |
 | **Track** | Scroll-linked camera push | `CinematicHero` plate only |
 | **Dissolve** | Still → moving image | `FilmFrame` hover |
+| **Regard** | The character noticing you | `HowItsMade` gaze and blink |
 
 **Principles**
 
@@ -96,6 +97,12 @@ nothing else.
 - Hover is a **wipe**, never a glow. `FilmButton`, `UnderlineLink`, `FilmFrame`
   and `ProcessSequence` all use the same left-to-right gold wipe, which is what
   makes the interaction language feel like one system.
+
+**Regard** is the one idle animation on the site and the exception that proves
+the rule: the character blinks and tracks the cursor when nothing is happening.
+It is allowed because it is the content of that section, not decoration on top
+of it. Do not take it as licence to add ambient motion elsewhere. Its rules
+live in [CHARACTER.md](CHARACTER.md).
 
 **Explicitly banned:** idle float/bob, staggered fade-ins on every list item,
 hover-glow, more than one parallax layer per section, particles, and any

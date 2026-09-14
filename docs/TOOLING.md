@@ -17,6 +17,11 @@ codebase were invisible in source and obvious in `getComputedStyle`:
 await page.evaluate(() => getComputedStyle(document.querySelector('h1')).fontSize);
 ```
 
+`npm run shoot:face` is the same idea taken further: rather than producing
+images for a human to judge, it asserts on measured transforms — how far the
+irises actually moved, whether the lid actually closed, whether the blink gaps
+actually differ. Behaviour that only exists at runtime needs a runtime test.
+
 ## MCP servers
 
 `.mcp.json` declares two project-scoped MCP servers. Claude Code will ask you

@@ -1,0 +1,4 @@
+# For scripts/prepare-face-assets.py only. Not needed to build or run the site;
+# the generated character layers are committed.
+Pillow>=10
+numpy>=1.26

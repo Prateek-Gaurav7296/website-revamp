@@ -8,7 +8,7 @@ one file.
 |---|---|
 | `site.ts` | Name, tagline, meta description, nav links, social links, contact email |
 | `work.ts` | The portfolio films and the YouTube playlist link |
-| `process.ts` | The five process steps |
+| `process.ts` | The five workflow stages shown across the character's face |
 | `proof.ts` | The six statistics |
 | `testimonials.ts` | Client quotes |
 | `team.ts` | Founder bios |
@@ -46,6 +46,15 @@ one content rule with a hard edge.
 **Layout is not content.** How many columns a film spans lives in `LAYOUT` in
 `components/sections/WorkShowcase.tsx`. Reorder films here; re-cut the page
 there. Each grid row must still sum to 12 columns.
+
+## Process
+
+The five stages of section 04. `title` must stay a single word — it is set in
+display type on the workflow line and a second word breaks the rhythm.
+`summary` is the resting state; `detail` is revealed when the stage opens.
+
+`content/face-geometry.json` sits alongside these but is **generated** — see
+[CHARACTER.md](CHARACTER.md). Do not edit it by hand.
 
 ## Proof
 
@@ -90,6 +99,7 @@ saved a lead it dropped.
 | `public/founders/` | Founder portraits |
 | `public/testimonials/` | Client portraits |
 | `public/icons/` | Proof-stat icons |
+| `public/character/` | Generated character layers — see [CHARACTER.md](CHARACTER.md) |
 
 Both videos need compressed web masters before launch — see **Known gaps** in
 the [README](../README.md#known-gaps).

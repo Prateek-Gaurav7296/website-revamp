@@ -10,7 +10,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf .next",
-    "shoot": "node scripts/shoot.mjs"
+    "shoot": "node scripts/shoot.mjs",
+    "shoot:face": "node scripts/shoot-face.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.47.10",

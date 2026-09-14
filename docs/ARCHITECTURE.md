@@ -10,7 +10,7 @@ almost empty — it is a table of contents:
 | 01 | Open | `CinematicHero` | Footage and one positioning line. Nothing else. |
 | 02 | The Premise | `Manifesto` | What changes when AI enters filmmaking. Belief before proof. |
 | 03 | The Work | `WorkShowcase` | The strongest asset, high on the page. |
-| 04 | How It's Made | `ProcessSequence` | The five-step shot list. |
+| 04 | How It's Made | `HowItsMade` | The creative director, and the five-stage workflow across his face. |
 | 05 | The Proof | `ProofStrip` | Stats — *after* the work has landed. |
 | 06 | What Clients Say | `TestimonialFullbleed` | Two quotes at display scale. |
 | 07 | Who's Behind It | `TeamSection` | The founders. |
@@ -45,6 +45,14 @@ Shared behaviour, no content:
   [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md#motion).
 - **`FilmButton` / `UnderlineLink`** — the only two interactive controls.
 - **`MotionProvider`** — wraps the app in framer's `reducedMotion="user"`.
+
+### `components/sections/HowItsMade/`
+
+The only section with its own directory, because it is the only one with real
+behaviour: a character whose eyes track the cursor and who blinks on a
+randomised schedule, plus a workflow that expands in place. It has its own
+document — [CHARACTER.md](CHARACTER.md) — and its own test harness,
+`npm run shoot:face`. Read both before changing it.
 
 ### `components/media/`
 
@@ -85,6 +93,9 @@ own composition; that is the whole identity.
 - **Client components** are marked `'use client'` and kept as small as
   possible. `Manifesto`, `ProofStrip`, `TestimonialFullbleed`, `TeamSection`
   and `Section` are server components.
+- **Never drive an animation from React state at pointer frequency.** Write to
+  a `MotionValue` instead — `HowItsMade` tracks the cursor across a full
+  section with zero re-renders, and that is the standard to hold.
 - **No arbitrary hex values in components.** Use a Tailwind token. The
   exception is framer-motion `variants`, which animate raw colour values —
   those hexes are commented where they appear.
