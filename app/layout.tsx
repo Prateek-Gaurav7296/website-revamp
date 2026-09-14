@@ -5,6 +5,7 @@ import { FilmGrain } from '@/components/layout/FilmGrain';
 import { Footer } from '@/components/layout/Footer';
 import { Leader } from '@/components/layout/Leader';
 import { Navbar } from '@/components/layout/Navbar';
+import { SectionScroller } from '@/components/layout/SectionScroller';
 import { MotionProvider } from '@/components/primitives/MotionProvider';
 import { site } from '@/content/site';
 import './globals.css';
@@ -84,6 +85,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         <MotionProvider>
           <Leader />
+          <SectionScroller />
           <FilmGrain />
           <ChapterRail />
           <Navbar />

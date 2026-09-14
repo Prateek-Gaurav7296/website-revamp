@@ -47,8 +47,10 @@ export function WorkShowcase() {
       id="work"
       index="03"
       kicker="The work"
-      meta={`${films.length} films`}
-      title={['Six films.', 'None of them look like a template.']}
+      // Not a count. The catalogue is much larger than the wall, and a number
+      // in the headline dates the moment a film is added.
+      meta="Six of many"
+      title={['None of them', 'look like a template.']}
       bleed
     >
       {/* Mobile: a swipeable strip. A six-tile mosaic on a phone is six
@@ -62,12 +64,13 @@ export function WorkShowcase() {
       </div>
 
       {/* Tablet and up: the wall.
-          Height is measured against the viewport minus the room the slate,
-          title and exit link take, so the whole beat lands on one screen
-          instead of the grid alone doing so and pushing the rest below. */}
+          Height is the viewport minus the measured overhead — padding, slate,
+          title and exit link come to about 30rem — so the whole beat lands on
+          one screen rather than the grid alone doing so and pushing the rest
+          past the snap point. `npm run shoot:heights` checks this. */}
       <div
         className="frame mt-8 hidden grid-cols-12 grid-rows-6 gap-3 md:grid lg:gap-4"
-        style={{ height: 'min(calc(100vh - 26rem), 28rem)' }}
+        style={{ height: 'min(calc(100svh - 30rem), 26rem)' }}
       >
         {films.map((film, index) => (
           <RevealFrame key={film.id} className={cn(TILES[index], 'min-h-0')}>

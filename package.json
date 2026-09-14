@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf .next",
     "shoot": "node scripts/shoot.mjs",
-    "shoot:face": "node scripts/shoot-face.mjs"
+    "shoot:face": "node scripts/shoot-face.mjs",
+    "shoot:heights": "node scripts/shoot-heights.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.47.10",

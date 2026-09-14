@@ -6,7 +6,7 @@ import { useState, type FormEvent } from 'react';
 import { FilmButton } from '@/components/primitives/FilmButton';
 import { Reveal } from '@/components/primitives/Reveal';
 import { Section } from '@/components/primitives/Section';
-import { site } from '@/content/site';
+import { composeUrl, site } from '@/content/site';
 import { cn } from '@/lib/cn';
 import { DURATION, EASE_FILM } from '@/lib/motion';
 
@@ -103,14 +103,14 @@ export function ContactInvite() {
       meta="Two-day reply"
       title={['Bring us the brand.', "We'll bring the film."]}
     >
-      <div className="mt-14 grid gap-12 lg:grid-cols-12 lg:gap-10">
+      <div className="mt-10 grid gap-8 md:grid-cols-12 md:gap-8 lg:gap-10">
         {/* The invitation. Short, and it answers "what do I get". */}
-        <Reveal className="lg:col-span-4">
+        <Reveal className="md:col-span-5 lg:col-span-4">
           <p className="max-w-sm font-mono text-sm leading-relaxed text-muted">
             Tell us what you&apos;re launching and roughly when.
           </p>
 
-          <ul className="mt-8 space-y-3">
+          <ul className="mt-6 space-y-2.5">
             {PROMISES.map((promise) => (
               <li key={promise} className="flex items-start gap-3">
                 <Check size={14} className="mt-[3px] shrink-0 text-gold" />
@@ -119,10 +119,12 @@ export function ContactInvite() {
             ))}
           </ul>
 
-          <div className="mt-10 border-t border-line pt-6">
+          <div className="mt-8 border-t border-line pt-5">
             <p className="label">Or just email us</p>
             <a
-              href={`mailto:${site.contactEmail}`}
+              href={composeUrl(site.contactEmail, 'A film with NextBerry Labs')}
+              target="_blank"
+              rel="noopener noreferrer"
               className="mt-3 inline-flex items-center gap-2 font-mono text-sm text-gold underline decoration-bronze underline-offset-8 transition-colors hover:decoration-gold"
             >
               {site.contactEmail}
@@ -133,8 +135,8 @@ export function ContactInvite() {
 
         {/* The panel. Lifted ground plus a gold rule across the top: the only
             object on the page that announces itself this directly. */}
-        <Reveal delay={0.08} className="lg:col-span-8">
-          <div className="relative border border-line bg-surface p-6 sm:p-10">
+        <Reveal delay={0.08} className="md:col-span-7 lg:col-span-8">
+          <div className="relative border border-line bg-surface p-5 sm:p-7 lg:p-8">
             <span aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-gold" />
 
             {status === 'sent' ? (
@@ -145,7 +147,7 @@ export function ContactInvite() {
                 </p>
               </div>
             ) : (
-              <form onSubmit={onSubmit} noValidate className="grid gap-x-8 gap-y-7 sm:grid-cols-2">
+              <form onSubmit={onSubmit} noValidate className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
                 <Field id="name" index="01" label="Name" value={values.name} error={errors.name} onChange={set('name')} required />
                 <Field id="email" index="02" label="Email" type="email" value={values.email} error={errors.email} onChange={set('email')} required />
                 <Field id="phone" index="03" label="Phone" type="tel" value={values.phone} error={errors.phone} onChange={set('phone')} required />
@@ -171,7 +173,12 @@ export function ContactInvite() {
                   {status === 'error' ? (
                     <p role="alert" className="font-mono text-sm text-alert">
                       {errorMessage} Email us at{' '}
-                      <a href={`mailto:${site.contactEmail}`} className="underline">
+                      <a
+                        href={composeUrl(site.contactEmail)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline"
+                      >
                         {site.contactEmail}
                       </a>
                       .
@@ -233,7 +240,7 @@ function Field({ id, index, label, value, onChange, type = 'text', error, requir
           <textarea
             id={id}
             name={id}
-            rows={3}
+            rows={2}
             value={value}
             onChange={onChange}
             onFocus={() => setFocused(true)}

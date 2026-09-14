@@ -32,7 +32,7 @@ export function TeamSection() {
       tone="raised"
       title={['Two founders.', 'One edit suite.']}
     >
-      <div className="mt-14 grid gap-10 md:grid-cols-2 md:gap-12 lg:gap-16">
+      <div className="mt-10 grid gap-8 md:grid-cols-2 md:gap-10 lg:gap-14">
         {founders.map((founder, index) => {
           const isActive = active === founder.id;
 
@@ -44,7 +44,7 @@ export function TeamSection() {
                 onFocus={() => setActive(founder.id)}
                 onBlur={() => setActive(null)}
                 tabIndex={0}
-                className="group relative h-full border-t border-line pt-8 outline-none"
+                className="group relative h-full border-t border-line pt-6 outline-none"
               >
                 <motion.span
                   aria-hidden="true"
@@ -56,7 +56,7 @@ export function TeamSection() {
 
                 <div className="flex items-start gap-6">
                   <motion.div
-                    className="w-28 shrink-0 sm:w-36 lg:w-40"
+                    className="w-24 shrink-0 sm:w-32 lg:w-36"
                     animate={{ y: isActive ? -6 : 0 }}
                     transition={SPRING_POINTER}
                   >
@@ -89,7 +89,7 @@ export function TeamSection() {
                   </div>
                 </div>
 
-                <p className="mt-7 font-mono text-sm leading-relaxed text-muted">{founder.bio}</p>
+                <p className="mt-6 font-mono text-sm leading-relaxed text-muted">{founder.bio}</p>
               </article>
             </Reveal>
           );

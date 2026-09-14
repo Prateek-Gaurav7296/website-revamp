@@ -29,7 +29,11 @@ export function CinematicHero() {
   const copyLift = useTransform(scrollYProgress, [0, 1], [0, -40]);
 
   return (
-    <section id="top" ref={sectionRef} className="relative min-h-[100svh] overflow-hidden">
+    <section
+      id="top"
+      ref={sectionRef}
+      className="relative min-h-[100svh] snap-start overflow-hidden"
+    >
       <motion.div className="plate-track absolute inset-0" style={{ scale: plateScale, opacity: plateOpacity }}>
         <video
           src="/videos/hero.mp4"

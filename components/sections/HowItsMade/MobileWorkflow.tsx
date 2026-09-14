@@ -1,7 +1,6 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { processSteps } from '@/content/process';
 import { cn } from '@/lib/cn';
@@ -115,9 +114,6 @@ export function MobileWorkflow({ activeIndex, onActivate, revealed }: MobileWork
                     >
                       <span className="mt-3 block font-mono text-xs leading-relaxed text-ink/80">
                         {step.detail}
-                      </span>
-                      <span className="label mt-4 inline-flex items-center gap-2 text-gold">
-                        Explore <ArrowRight size={13} />
                       </span>
                     </motion.span>
                   )}

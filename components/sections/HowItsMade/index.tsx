@@ -105,7 +105,7 @@ export function HowItsMade() {
       {/* The scene. Cursor position is measured across the viewport, not this
           box, so the screen's left and right edges are the first and last
           frames — see useGaze. */}
-      <div ref={gaze.sceneRef} className="relative mt-10 md:mt-4">
+      <div ref={gaze.sceneRef} className="relative mt-8 md:mt-2">
         {/*
           Sticky lives here, not on the clipped box below: a sticky element can
           only travel inside its own parent, and that box's parent ends exactly

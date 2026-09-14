@@ -29,7 +29,8 @@ npm run dev                  # http://localhost:3000
 | `npm run lint` | ESLint (next/core-web-vitals) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run shoot` | Visual QA — screenshots every section at desktop and mobile into `.screenshots/` |
-| `npm run shoot:face` | Asserts the section 04 character still tracks, blinks and respects reduced motion |
+| `npm run shoot:face` | Asserts the section 04 character still tracks and respects reduced motion |
+| `npm run shoot:heights` | Asserts every section still fits one screen, which the scroll snapping depends on |
 
 > `npm run build` overwrites `.next`, which breaks a dev server that is already
 > running. Stop `npm run dev` first, or serve the build on another port.
@@ -115,8 +116,6 @@ These are real and tracked, not oversights:
 - **`face-base.png` is 2.4 MB.** It is served through `next/image` as AVIF/WebP
   at the rendered size, so the wire cost is far lower, but a properly exported
   source would still be better.
-- **The `Explore →` affordance on each workflow stage does not lead anywhere
-  yet.** It needs either a destination or removal before launch.
 - **The clip carries a generator watermark** — a small four-point sparkle in
   the lower right. It is faint under the section's gradient but visible.
   Removing it means retouching every frame; a clean re-render is better.

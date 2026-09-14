@@ -125,6 +125,30 @@ animation whose only purpose is to prove animation was possible.
 > has an empty visible rect and never fires. `RevealLines` watches the unclipped
 > wrapper and propagates a variant down. Any new mask reveal must do the same.
 
+## One beat, one screen
+
+Every section is a full-screen scroll-snap stop, and one scroll gesture moves
+to the next. Two consequences worth knowing before adding anything:
+
+- **The height budget is a correctness constraint, not a taste one.** A section
+  taller than the viewport makes its own lower half unreachable, because the
+  gesture carries the visitor past it. `npm run shoot:heights` measures every
+  section at every mandatory breakpoint and fails on overflow — run it after
+  adding copy.
+- **CSS snap alone does not do this.** `mandatory` decides where to land from
+  where the gesture *ended*, so a single wheel notch snaps back to the section
+  you were already on and the page looks frozen. `SectionScroller` takes the
+  gesture and moves exactly one section; CSS keeps `proximity` underneath as a
+  fallback that never traps anyone.
+- **Reveal margins are shallow** (`IN_VIEW` in `lib/motion.ts`). With content
+  centred in a full-screen section, the slate sits near the top of the screen;
+  a deep top margin excluded it from the observer entirely and left it at
+  opacity 0 forever.
+
+On phones the sections genuinely cannot compress to 100svh at a readable size,
+so snapping falls back to `proximity` and the scroller stands down. Reduced
+motion turns both off.
+
 ## Responsive
 
 | Breakpoint | Behaviour |

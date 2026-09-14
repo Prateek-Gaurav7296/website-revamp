@@ -15,6 +15,29 @@
     scroll-padding-top: var(--header-h);
   }
 
+  /*
+   * Scroll snapping, as a fallback.
+   *
+   * `proximity`, not `mandatory`: mandatory decides where to land from where
+   * the gesture ended, so a single wheel notch snaps back to the section you
+   * were already on and the page looks frozen. It also makes any section
+   * taller than the screen — every one of them on a phone — partly
+   * unreachable.
+   *
+   * SectionScroller is what actually turns one gesture into one beat. This
+   * just tidies the resting position if it never runs.
+   */
+  html {
+    scroll-snap-type: y proximity;
+  }
+
+  /* Snapping fights assistive scrolling and motion sensitivity alike. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-snap-type: none;
+    }
+  }
+
   body {
     @apply bg-stage text-ink font-display antialiased;
     /* No horizontal overflow at any breakpoint (docs/DESIGN_SYSTEM.md §Responsive). */

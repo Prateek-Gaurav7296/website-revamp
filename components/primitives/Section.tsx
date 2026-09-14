@@ -39,6 +39,12 @@ interface SectionProps {
  *
  * Adding a section means adding one <Section> here and one entry in
  * ChapterRail's CHAPTERS array. Nothing else.
+ *
+ * Every beat is one screen tall and is a scroll-snap stop, so one scroll
+ * gesture moves to the next one. That makes the height budget real: content
+ * has to fit 100svh minus this padding, or the section grows past the snap
+ * point and a single scroll no longer lands cleanly. `npm run shoot:heights`
+ * measures every section against the viewport.
  */
 export function Section({
   id,
@@ -55,7 +61,11 @@ export function Section({
     <section
       id={id}
       className={cn(
-        'relative border-t border-line py-24 md:py-32',
+        // One beat, one screen. `min-h` rather than a fixed height so a
+        // section that genuinely cannot compress — a long form on a short
+        // phone — grows instead of clipping its own content.
+        'relative flex min-h-[100svh] snap-start flex-col justify-center',
+        'border-t border-line py-20 md:py-24',
         tone === 'raised' ? 'bg-stage-alt' : 'bg-stage',
         className
       )}
@@ -74,7 +84,7 @@ export function Section({
 
         {title && (
           <RevealLines
-            className="mt-12 max-w-5xl text-display-md font-bold text-ink md:mt-16"
+            className="mt-8 max-w-5xl text-display-md font-bold text-ink md:mt-10"
             delay={0.06}
             lines={title}
           />

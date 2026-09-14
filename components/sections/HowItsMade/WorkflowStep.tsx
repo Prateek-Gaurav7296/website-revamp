@@ -1,7 +1,6 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
 import type { ProcessStep } from '@/content/process';
 import { cn } from '@/lib/cn';
 import { DURATION, EASE_FILM, SPRING_HEAVY } from '@/lib/motion';
@@ -98,9 +97,6 @@ export function WorkflowStep({ step, isOpen, isDimmed, onOpen, onClose }: Workfl
               <p className="mt-4 max-w-[18rem] font-mono text-xs leading-relaxed text-ink/80 sm:text-sm">
                 {step.detail}
               </p>
-              <span className="label mt-5 inline-flex items-center gap-2 text-gold">
-                Explore <ArrowRight size={13} />
-              </span>
             </motion.div>
           )}
         </AnimatePresence>

@@ -1,14 +1,17 @@
 import Image from 'next/image';
-import { Reveal, RevealLines } from '@/components/primitives/Reveal';
+import { Reveal } from '@/components/primitives/Reveal';
 import { Section } from '@/components/primitives/Section';
 import { proofPoints } from '@/content/proof';
 
 /**
  * 05 — The Proof.
  *
- * The numeral is the composition: display scale, gold, with the label and
- * source note as mono footnotes. Six equal icon cards would flatten the
- * hierarchy straight back out.
+ * A strip, not a wall of stat cards. Six numerals in one row on a wide screen,
+ * divided by hairlines and nothing else — the numeral is the whole
+ * composition, and the note beneath it is a footnote, not a paragraph.
+ *
+ * It reinforces the work above; it never opens. Keeping it to a single band
+ * is what stops it competing with the films.
  */
 export function ProofStrip() {
   return (
@@ -18,30 +21,26 @@ export function ProofStrip() {
       kicker="The proof"
       meta={`${proofPoints.length} findings`}
       tone="raised"
-      title={['Emotion outperforms information.', 'Every time.']}
+      title={['Emotion outperforms information.']}
     >
       {/* gap-px over a line-coloured ground draws every divider for us — no
           nth-child arithmetic to break when a stat is added or removed. */}
-      <div className="mt-16 grid grid-cols-1 gap-px border-y border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-10 grid grid-cols-2 gap-px border-y border-line bg-line sm:grid-cols-3 lg:grid-cols-6">
         {proofPoints.map((point, index) => (
-          <Reveal key={point.label} delay={(index % 3) * 0.06} className="bg-stage-alt">
-            <div className="flex h-full flex-col justify-between px-5 py-10 lg:px-8">
-              <div className="flex items-center gap-3">
-                <Image
-                  src={point.icon}
-                  alt=""
-                  width={20}
-                  height={20}
-                  className="h-5 w-5 object-contain opacity-70"
-                />
-                <p className="label text-muted">{point.label}</p>
-              </div>
-
-              <p className="mt-10 text-6xl font-bold leading-none tracking-tight text-gold md:text-7xl">
+          <Reveal key={point.label} delay={(index % 3) * 0.05} className="bg-stage-alt">
+            <div className="flex h-full flex-col px-4 py-6 lg:px-5 lg:py-7">
+              <Image
+                src={point.icon}
+                alt=""
+                width={18}
+                height={18}
+                className="h-[18px] w-[18px] object-contain opacity-60"
+              />
+              <p className="mt-4 text-3xl font-bold leading-none tracking-tight text-gold lg:text-4xl">
                 {point.value}
               </p>
-
-              <p className="mt-5 max-w-xs font-mono text-sm leading-relaxed text-muted">
+              <p className="label mt-3 text-ink">{point.label}</p>
+              <p className="mt-2 font-mono text-xs leading-relaxed text-muted">
                 {point.description}
               </p>
             </div>
@@ -49,10 +48,11 @@ export function ProofStrip() {
         ))}
       </div>
 
-      <RevealLines
-        className="mt-16 max-w-4xl text-display-md font-bold text-ink"
-        lines={[<>All of it at a fraction</>, <>of the cost and time.</>]}
-      />
+      <Reveal delay={0.1}>
+        <p className="mt-8 font-mono text-sm text-muted">
+          All of it at a fraction of the cost and time it used to take.
+        </p>
+      </Reveal>
     </Section>
   );
 }

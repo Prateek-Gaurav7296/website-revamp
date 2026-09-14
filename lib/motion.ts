@@ -32,5 +32,13 @@ export const DURATION = {
   cut: 0.9,
 } as const;
 
-/** Viewport trigger shared by every scroll reveal, so beats land in rhythm. */
-export const IN_VIEW = { once: true, margin: '-15% 0px -10% 0px' } as const;
+/**
+ * Viewport trigger shared by every scroll reveal, so beats land in rhythm.
+ *
+ * Deliberately shallow. Each beat is now a full-screen snap stop with its
+ * content centred, which puts the slate close to the top of the screen — a
+ * deep top margin excluded it from the observer's band entirely and left it
+ * sitting at opacity 0 forever. When the whole section is on screen anyway,
+ * there is nothing to gain from waiting.
+ */
+export const IN_VIEW = { once: true, margin: '-5% 0px -5% 0px' } as const;
