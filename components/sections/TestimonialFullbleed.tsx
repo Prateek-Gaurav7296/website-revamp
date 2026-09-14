@@ -23,11 +23,18 @@ import { cn } from '@/lib/cn';
  * strip race. Nothing else needs touching to add one.
  *
  * The animation is CSS, not JS: it runs on the compositor, costs nothing on
- * the main thread, and keeps running while the tab is busy. It pauses on hover
- * so a quote can actually be read, and stops entirely under reduced motion —
- * where the strip becomes a plain scrollable row.
+ * the main thread, and keeps running while the tab is busy. It does not pause
+ * on hover — the strip is full-bleed and sits mid-screen, so the cursor rests
+ * over it most of the time and pause-on-hover left it looking frozen. Under
+ * reduced motion it stops entirely and becomes a plain scrollable row.
  */
-const SECONDS_PER_QUOTE = 13;
+/**
+ * Seconds of travel per quote. Tuned as a speed, not a duration: each card is
+ * roughly 26rem, so this works out near 50px/s, which reads as moving at a
+ * glance without outrunning the copy. Scaling with the count keeps that speed
+ * constant as clients are added.
+ */
+const SECONDS_PER_QUOTE = 8;
 
 /**
  * A long fade, not a short one. Quotes are wide, so a narrow ramp still leaves
@@ -58,7 +65,7 @@ export function TestimonialFullbleed() {
             'flex w-max',
             reduced
               ? 'overflow-x-auto'
-              : 'animate-[marquee_var(--marquee-duration)_linear_infinite] group-hover:[animation-play-state:paused]'
+              : 'animate-[marquee_var(--marquee-duration)_linear_infinite]'
           )}
           style={{ '--marquee-duration': `${duration}s` } as React.CSSProperties}
         >
