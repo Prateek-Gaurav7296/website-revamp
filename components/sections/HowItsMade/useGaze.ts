@@ -4,7 +4,7 @@ import { useMotionValue, useSpring, type MotionValue } from 'framer-motion';
 import { useCallback, useEffect, useRef } from 'react';
 
 /**
- * Where the cursor is across the scene, as 0 (far left) to 1 (far right).
+ * Where the cursor is across the screen, as 0 (far left) to 1 (far right).
  *
  * Nothing here touches React state — the pointer writes straight into a
  * MotionValue and the frame swap reads it back, so moving the cursor across
@@ -12,7 +12,7 @@ import { useCallback, useEffect, useRef } from 'react';
  */
 export interface Gaze {
   position: MotionValue<number>;
-  /** The element the cursor position is measured across. Attach to the scene. */
+  /** Marks where the character lives; the listener is bound to its section. */
   sceneRef: React.RefObject<HTMLDivElement>;
   /** Point at a client-space x (the pointer, or a focused step on touch). */
   lookAt: (clientX: number) => void;
@@ -34,18 +34,29 @@ export function useGaze(): Gaze {
   const sceneRef = useRef<HTMLDivElement>(null);
   const position = useMotionValue(0.5);
 
+  /**
+   * Measured across the viewport, not across the character's own box.
+   *
+   * The scene sits inside the page gutter, so mapping across it leaves the
+   * outermost strip of screen unreachable — and worse, moving into that strip
+   * fires `pointerleave`, which used to snap back to the middle frame and read
+   * as the clip restarting. Across the full width, the screen edges are the
+   * first and last frames and there is nowhere to fall off.
+   */
   const lookAt = useCallback(
     (clientX: number) => {
-      const el = sceneRef.current;
-      if (!el) return;
-      const box = el.getBoundingClientRect();
-      if (!box.width) return;
-      const t = (clientX - box.left) / box.width;
+      const width = window.innerWidth;
+      if (!width) return;
+      const t = clientX / width;
       position.set(t < 0 ? 0 : t > 1 ? 1 : t);
     },
     [position]
   );
 
+  /**
+   * Ease back to centre — only when the pointer leaves the section entirely
+   * (scrolling away, or moving up into the nav), never at a screen edge.
+   */
   const relax = useCallback(() => position.set(0.5), [position]);
 
   return { position, sceneRef, lookAt, relax };
@@ -65,7 +76,10 @@ export function usePointerGaze(gaze: Gaze, enabled: boolean) {
   const { lookAt, relax, sceneRef } = gaze;
 
   useEffect(() => {
-    const el = sceneRef.current;
+    // Bind to the whole section, which is full-bleed. The character's own box
+    // is inset by the page gutter, so listening there would make the outermost
+    // strip of screen dead.
+    const el = sceneRef.current?.closest('section');
     if (!el || !enabled) return;
 
     // Coarse pointers never hover; there the active stage drives the gaze.

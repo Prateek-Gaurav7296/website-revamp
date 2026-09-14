@@ -13,12 +13,19 @@ again, and realises he is following the cursor.
 
 The clip is a single continuous gaze sweep — he looks to the viewer's left,
 through centre, to the viewer's right. **Every frame of it owns an equal slice
-of the scene's width.** The cursor at the left edge shows the first frame, a
-step right shows the next, and the right edge shows the last.
+of the screen's width.** The cursor at the left edge of the screen shows the
+first frame, a step right shows the next, and the right edge shows the last.
 
-At 100 frames across a 1344px scene that is about 13px of cursor travel per
+At 100 frames across a 1440px screen that is about 14px of cursor travel per
 frame, which reads as continuous eye movement rather than as a few fixed
 positions.
+
+Position is measured across the **viewport**, not across the character's own
+box. The character sits inside the page gutter, so measuring against it leaves
+the outermost strip of screen unreachable — and moving into that strip fires
+`pointerleave`, which snaps back to the neutral frame and reads as the clip
+restarting. The listener is bound to the section, which is full-bleed, so there
+is nowhere to fall off.
 
 His own rendered eyes do the looking, which means there is no overlay to keep
 registered, nothing to mask, and the lighting, hair, headphones and head
@@ -79,10 +86,6 @@ HowItsMade/
   WorkflowStep.tsx      one stage, expanding in place
   MobileWorkflow.tsx    the same five stages as a tappable rail (touch)
 ```
-
-The cursor position is measured across **the scene** — the whole interactive
-box — not across the character, so the first and last frames land exactly on
-its left and right edges.
 
 **No React state is on the pointer path.** The pointer writes into a
 `MotionValue`; the active frame is swapped by a direct style write from a

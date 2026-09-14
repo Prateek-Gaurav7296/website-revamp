@@ -79,27 +79,27 @@ const activeFrame = (page) =>
   const box = await openSection(page);
   console.log('\ngaze');
 
-  const at = async (fx, fy) => {
-    await page.mouse.move(
-      Math.max(2, Math.min(1438, box.x + box.w * fx)),
-      Math.max(80, Math.min(898, box.y + box.h * fy)),
-      { steps: 14 }
-    );
+  // Cursor position is measured across the viewport, so the test drives the
+  // screen's own edges — that is where the first and last frames live.
+  const { width: vw, height: vh } = page.viewportSize();
+  const y = Math.max(90, Math.min(vh - 10, box.y + box.h * 0.45));
+  const at = async (fx) => {
+    await page.mouse.move(Math.max(1, Math.min(vw - 1, fx * vw)), y, { steps: 14 });
     await page.waitForTimeout(1100);
     return activeFrame(page);
   };
 
-  const left = await at(0.04, 0.4);
+  const left = await at(0.0);
   await page.screenshot({ path: `${OUT}/face-gaze-left.png` });
-  const mid = await at(0.5, 0.4);
+  const mid = await at(0.5);
   await page.screenshot({ path: `${OUT}/face-gaze-centre.png` });
-  const right = await at(0.96, 0.4);
+  const right = await at(1.0);
   await page.screenshot({ path: `${OUT}/face-gaze-right.png` });
 
-  // Frame 0 is him looking to the viewer's right, the last frame the left.
   // The clip sweeps viewer-left to viewer-right, so the cursor maps straight
   // onto it: the left edge selects frame 0, the right edge the last frame.
-  const edge = Math.max(3, Math.round(right.total * 0.06));
+  // At the very edges the mapping should land on the exact first/last frame.
+  const edge = 1;
   check(left.index <= edge, 'cursor left shows a left-looking frame',
     `frame ${left.index}/${left.total}`);
   check(right.index >= right.total - edge, 'cursor right shows a right-looking frame',
@@ -118,7 +118,7 @@ const activeFrame = (page) =>
   // than the mapping.
   const seen = new Set();
   for (let i = 0; i <= 20; i++) {
-    await page.mouse.move(box.x + (box.w * i) / 20, box.y + box.h * 0.45, { steps: 4 });
+    await page.mouse.move(Math.max(1, Math.min(vw - 1, (vw * i) / 20)), y, { steps: 4 });
     await page.waitForTimeout(320);
     seen.add((await activeFrame(page)).index);
   }
@@ -138,7 +138,7 @@ const activeFrame = (page) =>
   const box = await openSection(page);
   console.log('\nreduced motion');
 
-  await page.mouse.move(box.x + 40, box.y + box.h * 0.45, { steps: 10 });
+  await page.mouse.move(40, Math.max(90, box.y + box.h * 0.45), { steps: 10 });
   await page.waitForTimeout(1200);
 
   const frame = await activeFrame(page);

@@ -48,14 +48,13 @@ export function HowItsMade() {
       setActiveStep(index);
       if (reducedMotion) return;
 
-      const el = gaze.sceneRef.current;
-      if (!el || window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+      // On a pointer device the real cursor is already driving this.
+      if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
 
-      // Place a virtual cursor where that stage sits along the scene, so he
+      // Place a virtual cursor where that stage sits across the screen, so he
       // turns toward whatever the visitor is reading.
-      const box = el.getBoundingClientRect();
       const across = index / (processSteps.length - 1);
-      gaze.lookAt(box.left + box.width * (0.12 + across * 0.76));
+      gaze.lookAt(window.innerWidth * (0.1 + across * 0.8));
     },
     [gaze, reducedMotion]
   );
@@ -103,8 +102,9 @@ export function HowItsMade() {
 
       {/* The stage. Gaze is measured against this whole box, so the character
           reacts to the composition rather than only to his own head. */}
-      {/* The scene. The cursor position is measured across this box, so the
-          first and last frames land on its left and right edges. */}
+      {/* The scene. Cursor position is measured across the viewport, not this
+          box, so the screen's left and right edges are the first and last
+          frames — see useGaze. */}
       <div ref={gaze.sceneRef} className="relative mt-10 md:mt-4">
         {/*
           Sticky lives here, not on the clipped box below: a sticky element can
@@ -140,7 +140,7 @@ export function HowItsMade() {
                 // visible; the narrower breakpoints oversize it and let the
                 // plate clip, because on a phone the alternative is a head the
                 // size of a postage stamp.
-                className="relative left-1/2 w-[190%] max-w-none -translate-x-1/2 sm:w-[140%] lg:w-full"
+                className="relative left-1/2 w-[133%] max-w-none -translate-x-1/2 sm:w-[98%] lg:w-[70%]"
               />
             </motion.div>
 
