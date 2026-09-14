@@ -38,7 +38,10 @@ export function WorkflowStep({ step, isOpen, isDimmed, onOpen, onClose }: Workfl
       aria-expanded={isOpen}
       transition={SPRING_HEAVY}
       className={cn(
-        'relative cursor-pointer select-none rounded-none outline-none',
+        // min-w-0 matters: a flex item will not shrink below its content's
+        // min-width without it, so the centred row spills past the scene on
+        // both sides and widens the document.
+        'relative min-w-0 cursor-pointer select-none rounded-none outline-none',
         isOpen ? 'z-30' : 'z-20'
       )}
       style={{ flex: isOpen ? '0 0 21rem' : '0 1 auto' }}

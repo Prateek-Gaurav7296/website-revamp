@@ -170,9 +170,13 @@ const activeFrame = (page) =>
   await page.waitForTimeout(1400);
   await page.screenshot({ path: `${OUT}/face-mobile-2.png` });
 
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - document.documentElement.clientWidth
-  );
+  const overflow = await page.evaluate(() => {
+    const y = window.scrollY;
+    window.scrollTo(400, y);
+    const x = window.scrollX;
+    window.scrollTo(0, y);
+    return x;
+  });
   const faceVisible = await page.evaluate(() => {
     const r = document.querySelector('[data-character="sequence"]').getBoundingClientRect();
     return r.bottom > 100 && r.top < window.innerHeight;
@@ -180,6 +184,39 @@ const activeFrame = (page) =>
 
   check(overflow === 0, 'no horizontal overflow', `${overflow}px`);
   check(faceVisible, 'the head stays pinned while the stages scroll');
+  await page.close();
+}
+
+// ----------------------------------------------------- sideways scroll ----
+{
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(2000);
+  console.log('\nsideways scroll');
+
+  // Visit every beat first. The bug this guards against was a one-shot
+  // animation that ended up parked past the right edge — it only appears
+  // after the section it lives in has been revealed, and then it stays.
+  for (const id of ['work', 'process', 'proof', 'testimonials', 'team', 'start']) {
+    await page.evaluate((section) => {
+      document.documentElement.style.scrollBehavior = 'auto';
+      window.scrollTo(0, document.getElementById(section).offsetTop);
+    }, id);
+    await page.waitForTimeout(900);
+  }
+
+  // Measured by actually trying to scroll. `scrollWidth - clientWidth` lies
+  // here: body carries `overflow-x: hidden`, so the metric reports what is
+  // clipped rather than what the document element will still scroll.
+  const drift = await page.evaluate(() => {
+    const y = window.scrollY;
+    window.scrollTo(400, y);
+    const x = window.scrollX;
+    window.scrollTo(0, y);
+    return x;
+  });
+  check(drift === 0, 'page cannot be scrolled sideways after visiting every beat',
+    `${drift}px`);
   await page.close();
 }
 

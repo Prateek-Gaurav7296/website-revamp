@@ -9,10 +9,14 @@ import { cn } from '@/lib/cn';
 /**
  * 06 — What Clients Say.
  *
- * One continuous strip that never stops and never resets. The list is rendered
- * twice and the track translates by exactly half its width before looping, so
- * the seam lands on an identical frame and the motion reads as endless rather
- * than as a carousel snapping back.
+ * One continuous strip of compact cards that never stops and never resets. The
+ * list is rendered twice and the track translates by exactly half its width
+ * before looping, so the seam lands on an identical frame and the motion reads
+ * as endless rather than as a carousel snapping back.
+ *
+ * The cards are small on purpose: at display scale a single quote fills the
+ * screen and the strip stops reading as a strip. Mono body copy keeps them
+ * dense without shouting, and the name is the only thing set in display type.
  *
  * Duration scales with the number of quotes, so adding a client to
  * content/testimonials.ts keeps the same reading speed instead of making the
@@ -23,7 +27,7 @@ import { cn } from '@/lib/cn';
  * so a quote can actually be read, and stops entirely under reduced motion —
  * where the strip becomes a plain scrollable row.
  */
-const SECONDS_PER_QUOTE = 16;
+const SECONDS_PER_QUOTE = 13;
 
 /**
  * A long fade, not a short one. Quotes are wide, so a narrow ramp still leaves
@@ -74,27 +78,27 @@ export function TestimonialFullbleed() {
 
 function Quote({ testimonial }: { testimonial: Testimonial }) {
   return (
-    <figure className="flex w-[86vw] shrink-0 items-start gap-6 border-l border-line px-6 sm:w-[62vw] sm:gap-8 sm:px-10 lg:w-[46vw]">
-      <Image
-        src={testimonial.image}
-        alt=""
-        width={176}
-        height={176}
-        className="h-28 w-28 shrink-0 object-cover grayscale sm:h-36 sm:w-36"
-      />
+    <figure className="flex w-[78vw] shrink-0 flex-col justify-between border-l border-line px-6 py-1 sm:w-[24rem] sm:px-8 lg:w-[26rem]">
+      <blockquote className="font-mono text-sm leading-relaxed text-ink/90 sm:text-[0.95rem]">
+        &ldquo;{testimonial.quote}&rdquo;
+      </blockquote>
 
-      <div className="min-w-0">
-        <blockquote className="text-lg font-bold leading-[1.28] text-ink sm:text-xl lg:text-2xl">
-          &ldquo;{testimonial.quote}&rdquo;
-        </blockquote>
-        <figcaption className="mt-5">
-          <span className="block font-mono text-sm text-ink">{testimonial.name}</span>
-          <span className="label mt-2 block text-muted">
-            {testimonial.role} <span className="text-line">/</span>{' '}
-            <span className="text-gold">{testimonial.company}</span>
+      <figcaption className="mt-6 flex items-center gap-4">
+        <Image
+          src={testimonial.image}
+          alt=""
+          width={144}
+          height={144}
+          className="h-16 w-16 shrink-0 object-cover grayscale sm:h-20 sm:w-20"
+        />
+        <div className="min-w-0">
+          <span className="block text-base font-bold leading-tight text-ink">
+            {testimonial.name}
           </span>
-        </figcaption>
-      </div>
+          <span className="label mt-2 block text-muted">{testimonial.role}</span>
+          <span className="label mt-1 block text-gold">{testimonial.company}</span>
+        </div>
+      </figcaption>
     </figure>
   );
 }
