@@ -114,10 +114,14 @@ const irisShift = (page) =>
     return out;
   });
 
+  // A double blink is one event, not two. Its second closure lands ~425ms
+  // after the first (95ms closed + 110ms opening + a 150ms pause + 70ms
+  // closing), so anything inside 700ms belongs to the blink already counted.
+  const DOUBLE_BLINK_WINDOW = 700;
   const events = [];
   let prev = -1e9;
   for (const [t, d] of samples) {
-    if (d > 0.85 && t - prev > 300) events.push(Math.round(t));
+    if (d > 0.85 && t - prev > DOUBLE_BLINK_WINDOW) events.push(Math.round(t));
     if (d > 0.85) prev = t;
   }
   const gaps = events.slice(1).map((t, i) => t - events[i]);

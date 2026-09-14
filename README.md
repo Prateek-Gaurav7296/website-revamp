@@ -7,7 +7,7 @@ production items are deliberately outstanding — see [Known gaps](#known-gaps).
 
 - **Stack** — Next.js 14 (App Router) · TypeScript · Tailwind CSS · framer-motion
 - **Design brief** — `nextberry-labs-creative-direction.md` (kept outside this repo)
-- **Docs** — [Architecture](docs/ARCHITECTURE.md) · [Design system](docs/DESIGN_SYSTEM.md) · [The character](docs/CHARACTER.md) · [Content](docs/CONTENT.md) · [Tooling](docs/TOOLING.md)
+- **Docs** — [Architecture](docs/ARCHITECTURE.md) · [Design system](docs/DESIGN_SYSTEM.md) · [The character](docs/CHARACTER.md) · [Video brief](docs/CHARACTER_VIDEO_BRIEF.md) · [Content](docs/CONTENT.md) · [Tooling](docs/TOOLING.md)
 
 ---
 
@@ -117,3 +117,9 @@ These are real and tracked, not oversights:
   source would still be better.
 - **The `Explore →` affordance on each workflow stage does not lead anywhere
   yet.** It needs either a destination or removal before launch.
+- **Section 04 still uses the layered PNG character, not video.** The supplied
+  director clip cannot carry a cursor-controlled gaze — it fails all four
+  checks in `scripts/check-character-video.py`. The spec and generation prompt
+  for a usable clip are in
+  [docs/CHARACTER_VIDEO_BRIEF.md](docs/CHARACTER_VIDEO_BRIEF.md); the eye rig
+  is already built and only the base layer needs swapping.

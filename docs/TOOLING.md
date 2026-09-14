@@ -22,6 +22,13 @@ images for a human to judge, it asserts on measured transforms — how far the
 irises actually moved, whether the lid actually closed, whether the blink gaps
 actually differ. Behaviour that only exists at runtime needs a runtime test.
 
+`scripts/extract-frames.mjs` pulls frames out of a video through headless
+Chromium, since there is no ffmpeg on this machine and Playwright was already
+installed. `scripts/check-character-video.py` scores those frames against the
+requirements in [CHARACTER_VIDEO_BRIEF.md](CHARACTER_VIDEO_BRIEF.md). Together
+they answer "can this clip carry the interactive character?" in one command,
+which is worth far more than looking at it and guessing.
+
 ## MCP servers
 
 `.mcp.json` declares two project-scoped MCP servers. Claude Code will ask you

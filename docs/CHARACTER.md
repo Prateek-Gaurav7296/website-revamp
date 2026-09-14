@@ -81,6 +81,18 @@ python3 -m venv .venv && .venv/bin/pip install -r scripts/requirements.txt
 The generated files are committed, so a normal checkout needs neither Python
 nor the source art.
 
+## Why this is not video
+
+A video plate would give hair, headphone and breathing motion for free, and it
+was the intended direction. The supplied clip cannot do it: the head travels
+68px, the face correlation drops to 0.79 as it turns, and the character is
+already performing his own left-to-right gaze. Our iris would be a second pair
+of eyes disagreeing with the first.
+
+The rig below is deliberately built so the base layer is swappable — a clip
+that passes [the video brief](CHARACTER_VIDEO_BRIEF.md) drops in behind the
+existing eyes without touching the gaze, springs, masking or workflow.
+
 ## Components
 
 ```
