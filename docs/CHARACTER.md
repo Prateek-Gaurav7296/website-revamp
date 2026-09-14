@@ -2,196 +2,157 @@
 
 Section 04, *How It's Made*, is built around a character who watches the
 visitor while the five-stage workflow runs across his face. He is the signature
-interaction on the site, and the only place with a personality of its own.
+interaction on the site.
 
-The intended moment is small: the visitor half-notices that the eyes moved,
-looks again, and realises he is tracking the cursor. Everything below is in
-service of that being believable — and of it never becoming a gimmick.
+The intended moment is small: the visitor half-notices that he looked, looks
+again, and realises he is following the cursor.
 
 ---
 
-## The source art is not a rig
+## How it works: the cursor picks the frame
 
-The supplied assets in `nextberry-character-assets/` look like separated layers
-and are not. This is the single most important thing to understand before
-touching this section.
+The obvious approach — draw our own iris over a video of a face — does not
+survive contact with real footage. The head moves while he looks (88px of
+travel and 12% of scale across the sweep we use), and a flat 2D iris cannot
+follow a head that slides, rescales or turns. The seam is visible immediately.
 
-| File | What it actually is |
-|---|---|
-| `face-base.png` | 1536×1024 head, keyed off a **white** background |
-| `{side}-eye.png` | 185×170 eye socket with **the iris baked in**, looking off to one side |
-| `{side}-pupil.png` | 100×100 **circular re-crop of the same pixels** — sclera, eyelid skin and all |
-| `{side}-eye-closed.png` | A smeared ellipse: no lashes, no lid crease, skin tone that does not match the face |
+So the direction is inverted. **The source clip already contains a gaze sweep:
+he looks to the viewer's right, through centre, to the viewer's left. The
+cursor chooses which frame of that sweep to show.** His real, fully rendered
+eyes do the looking, which means:
 
-So: translating `{side}-pupil.png` drags eyelid skin across the eyeball and
-reveals the baked-in iris underneath, and dropping the closed-eye sprite on top
-reads as a grey patch stuck over the eye.
+- nothing to register, nothing to mask, no second pair of eyes to disagree with
+- the lighting, hair, headphones and head pose are genuinely his
+- the gaze is as expressive as the animation was, because it *is* the animation
 
-`scripts/prepare-face-assets.py` turns that art into something animatable. It
-does not invent new character art — everything it emits is derived from the
-supplied files.
+`scripts/build-gaze-sequence.py` turns ~4 seconds of clip into 36 WebP frames
+(~720 KB total) plus `content/gaze-sequence.json`.
 
-## What the prep script produces
+### What the builder has to fix
 
-```
-public/character/
-  face-base.png        de-fringed: white matte and keyed specks removed
-  eye-{side}-open.png  the socket with the eyeball rebuilt as clean sclera
-  iris-{side}.png      the iris disc alone, feathered, catchlight intact
-  aperture-{side}.png  a soft mask of the eye opening
-  lid-{side}.png       the closed lid, re-keyed to the aperture and colour-matched
-content/face-geometry.json   every coordinate the component needs
-```
+**The head moves while he looks.** Each frame is counter-warped by a tracked
+transform (translation and scale, found by coarse-to-fine cross-correlation on
+a nose/mouth template — deliberately *not* the eyes, whose motion is the thing
+being measured) so the head lands in the same place at the same size in every
+frame. Only the eyes change.
 
-Four problems it solves, each worth knowing about:
+**He blinks mid-sweep.** A blink baked into the sequence would mean the
+character is permanently mid-blink whenever the cursor sits at that angle.
+Blink frames are detected by absolute sclera area — not a percentile, which
+always finds "the brightest 28%" of whatever is there and so reports a closed
+eye as open — dilated outwards to catch the part-closed frames either side, and
+dropped. Blinking is put back at runtime.
 
-**Registration.** The cropped sprites carry no placement data. Their positions
-were recovered by normalised cross-correlation against `face-base.png` — all
-four open-eye layers match at correlation `1.0000`, so the numbers in
-`EYE_ORIGIN` / `PUPIL_ORIGIN` are exact, not eyeballed.
+**Time is not gaze.** He accelerates and pauses, so frames evenly spaced in
+time are unevenly spaced in gaze. Resampling over the surviving frames makes
+cursor travel map onto continuous eye movement, and removes the blink from the
+timeline rather than leaving a stall where the gaze stops responding.
 
-**A clean eyeball.** The iris is cut out and the hole behind it refilled. Plain
-diffusion flat-fills and loses the upper-lid shadow, which leaves the character
-permanently startled, so the fill mirrors real sclera across the iris centre
-first — each eye has a wide clean sclera on one side — and diffuses only what
-mirroring cannot reach.
+**The clip's black is not the page's black.** Sampling the border and shifting
+each frame by the difference removes the visible panel edge; the outer band
+then fades to transparent so the plate dissolves into the ground.
 
-**Neutral gaze.** The art was drawn looking off to one side. Rest position is
-recomputed as the centre of each eye's aperture, so a visitor with their cursor
-in the middle gets looked at.
+### What is not automated
 
-**The white matte.** `face-base.png` was keyed off white, leaving both a bright
-fringe on every soft edge and opaque light-grey remnants in the gaps between
-the curls. A luminance threshold only catches the brightest of those and leaves
-a crusty lace around the silhouette, so the script does a proper soft white key
-on the *minimum* channel — a pixel is background only if it is bright in all
-three, which brown hair never is. The face is protected by an ellipse built
-from the known eye positions rather than by a skin-tone test, because this
-character's hair is warm brown and a skin-tone test protects exactly what needs
-removing. There is a regression check for this: the key must not change a
-single alpha value inside either eye box.
-
-Re-run it only if the source art changes:
-
-```bash
-python3 -m venv .venv && .venv/bin/pip install -r scripts/requirements.txt
-.venv/bin/python scripts/prepare-face-assets.py
-```
-
-The generated files are committed, so a normal checkout needs neither Python
-nor the source art.
-
-## Why this is not video
-
-A video plate would give hair, headphone and breathing motion for free, and it
-was the intended direction. The supplied clip cannot do it: the head travels
-68px, the face correlation drops to 0.79 as it turns, and the character is
-already performing his own left-to-right gaze. Our iris would be a second pair
-of eyes disagreeing with the first.
-
-The rig below is deliberately built so the base layer is swappable — a clip
-that passes [the video brief](CHARACTER_VIDEO_BRIEF.md) drops in behind the
-existing eyes without touching the gaze, springs, masking or workflow.
+The sweep range (12.9s–16.9s) is given explicitly in the script, not derived.
+An automated gaze metric was tried and is not trustworthy on this stylised
+face — it latches onto the closed lid mid-blink and reports the gaze jumping to
+the opposite extreme. The range was confirmed frame by frame at eye level
+instead, and the frames the builder emits are checked the same way.
 
 ## Components
 
 ```
 HowItsMade/
-  index.tsx          the section: layering, entrance, mobile/desktop split
-  CreativeFace.tsx   the coordinate system; owns nothing but layout
-  Eye.tsx            one eye: socket, masked iris, lid
-  useGaze.ts         pointer → normalised gaze, and the per-eye springs
-  useBlink.ts        the blink schedule
-  Workflow.tsx       the five stages on the line (desktop)
-  WorkflowStep.tsx   one stage, expanding in place
-  MobileWorkflow.tsx the same five stages as a tappable rail (touch)
+  index.tsx             the section: layering, entrance, mobile/desktop split
+  CharacterSequence.tsx the 36 frames, swapped by cursor position
+  useGaze.ts            pointer → normalised gaze, and the spring
+  useBlink.ts           the blink schedule
+  Workflow.tsx          the five stages on the line (desktop)
+  WorkflowStep.tsx      one stage, expanding in place
+  MobileWorkflow.tsx    the same five stages as a tappable rail (touch)
 ```
-
-### Keeping the layers registered
-
-`CreativeFace` establishes one positioned container at the source aspect ratio.
-Every child is placed in percentages of that container, and the iris travel is
-a percentage of the eye box, so **scaling the face cannot make the eyes drift**
-and no JavaScript measures anything. Adding a `width` to the face is the only
-thing needed to resize the character.
-
-The iris moves by translating a wrapper that spans the eye box; the wrapper is
-masked by `aperture-{side}.png`, so the disc slides under the lids exactly like
-a real eye instead of floating over the lashes.
 
 ### Gaze
 
-The pointer writes into two `MotionValue`s, normalised to `[-1, 1]` against the
-face's own width. **No React state is involved, so moving the mouse across this
-section causes zero re-renders.** Each eye reads those through its own
-`useSpring` with a slightly different config — high enough stiffness to feel
-attentive, high enough damping that the iris settles rather than wobbling,
-because overshoot on an eye reads as cartoon.
+The pointer writes into a `MotionValue`, normalised to `[-1, 1]` against the
+character's own width, and read through a spring. **No React state is on the
+pointer path, so scrubbing the whole sequence causes zero re-renders** — the
+active frame is swapped by direct style writes from a MotionValue subscription.
 
-Travel is capped well below what the anatomy allows: about 10px horizontally
-and 4px vertically at the rendered size. Vertical is deliberately less than
-half of horizontal — people track sideways far more than up and down, and a big
-vertical swing immediately looks like a puppet.
+Frame 0 is him looking to the viewer's right; the last frame is the viewer's
+left. Cursor right therefore maps to frame 0.
 
-When the pointer leaves the stage, gaze is set back to zero and the same
-springs carry the eyes home; nothing snaps.
+`RANGE_MULTIPLIER` in `useGaze.ts` is coupled to how wide the character is
+rendered: widen the element and the same cursor travel produces less
+deflection, until the cursor can no longer reach the first or last frame and he
+simply never looks as far as he can. **Re-run `npm run shoot:face` after
+changing either.**
 
 ### Blink
 
-A `MotionValue` from 0 to 1, animated on a loop with gaps randomised between
-2.5s and 4s — a fixed interval becomes visible within about three cycles. The
-lid sweeps down over 70ms, holds for 95ms, and lifts over 110ms. Roughly one
-blink in six is a double.
+A `MotionValue` from 0 to 1 driving the opacity of a single stabilised
+closed-eye frame, on a loop with gaps randomised between 2.5s and 4s — a fixed
+interval becomes visible within about three cycles. Roughly one blink in six is
+a double.
 
-Blink and gaze are **independent by construction**: the lid animates over
-whatever the irises are doing, and reopening leaves them exactly where they
-were looking. That separation is what makes the character read as one creature
-rather than two effects sharing a face.
+Blink and gaze are independent by construction: the overlay fades over whatever
+frame is showing, and reopening leaves the gaze exactly where it was.
 
 ### Layering
 
-Back to front: ground → face → workflow line → stages → the open stage. The
-workflow crosses at 61% of the face height — below the eyes, which must stay
-unobstructed because they are the interaction.
+Back to front: ground → character → workflow line → stages → the open stage.
+The workflow crosses at 61% of the character's height — below the eyes, which
+must stay unobstructed because they are the interaction.
 
-A single gradient over the face does three jobs at once: it gives the workflow
-type a dark field to sit on without putting a card behind it, it dissolves the
-hard bottom edge of the cut-out, and it keeps the eyes the only fully lit thing
-on screen. It is lighting, not a UI panel. Mobile crops the face much tighter
-than desktop, so the two breakpoints need separate ramps — sharing one puts the
-falloff straight across the eyes on a phone.
+A single gradient over the character gives the workflow type a dark field
+without putting a card behind it, and keeps the eyes the only fully lit thing
+on screen. It is lighting, not a UI panel. Mobile crops the character much
+tighter than desktop, so the two breakpoints need separate ramps.
 
 ### Touch
 
-There is no cursor, so the *active stage* carries the personality instead:
-tapping a stage opens it and turns the character's head toward it, and
-scrolling does the same as each stage passes the middle of the screen.
+There is no cursor, so the *active stage* carries the personality: tapping a
+stage opens it and turns his attention toward it, and scrolling does the same
+as each stage passes the middle of the screen. The head is `sticky` on mobile —
+without it he scrolls away before the visitor reaches the stages — and sits
+above the list, so stages dissolve under his jaw as they scroll past.
 
-The head is `sticky` on mobile. Without it the character scrolls away before
-the visitor reaches the stages and the whole point is never seen. The sticky
-wrapper has to be the ancestor that also contains the stage list — a sticky
-element can only travel inside its own parent — and the head sits *above* the
-list, so stages dissolve under his jaw as they scroll past.
+## Rebuilding the frames
+
+Only needed if the source clip changes.
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -r scripts/requirements.txt
+cp director-v2.mp4 public/character/candidate.mp4 && npm run dev
+node scripts/extract-frames.mjs /character/candidate.mp4 /tmp/sweep 12.70 17.20 68 1
+.venv/bin/python scripts/build-gaze-sequence.py /tmp/sweep
+rm public/character/candidate.mp4
+```
+
+Then **look at the frames** before trusting them — `SWEEP_FROM`/`SWEEP_TO` and
+the blink threshold are the settings most likely to need adjusting, and both
+fail in ways that look fine in code.
+
+The generated frames are committed, so a normal checkout needs neither Python
+nor the source clip.
 
 ## Guard rails
 
-`npm run shoot:face` drives a real browser and asserts on measured transforms.
-Run it after any change here. A CSS tweak can leave the irises pinned, the lid
-stuck open or the mask misaligned, and the page will still build and still look
-correct in a still screenshot.
+`npm run shoot:face` drives a real browser and asserts on measured state. Run
+it after any change here — a CSS tweak can pin the sequence to one frame, and
+the page will still build and still look correct in a still screenshot.
 
-It checks: horizontal travel lands in 8–15px, the eyes are not mechanically
-identical, vertical tracking is live and smaller than horizontal, the lid
-reaches full closure at non-repeating intervals, reduced motion disables both,
-and the phone layout has no overflow with the head still pinned.
+It checks: cursor right/centre/left select the expected frames, the index moves
+monotonically with the cursor, a slow sweep touches enough distinct frames to
+read as continuous rather than as three fixed positions, the blink fires at
+non-repeating intervals, reduced motion disables both, and the phone layout has
+no overflow with the head still pinned.
 
 ## Things not to do
 
-- **Do not flatten the character.** Face, eyes and irises stay independent.
-- **Do not resize the eye layers.** They are registered to the face's
-  coordinate system; scale the parent instead.
-- **Do not reset the pupils after a blink**, and do not let a blink interrupt
-  tracking.
+- **Do not reach for an iris overlay.** It was tried; see the head-motion
+  numbers above and [CHARACTER_VIDEO_BRIEF.md](CHARACTER_VIDEO_BRIEF.md).
 - **Do not put the workflow over the eyes.** Everything else is negotiable.
-- **Do not animate the pupils straight to the cursor.** The constraint and the
-  lag are the effect.
+- **Do not let a blink land in the sequence.** It becomes a cursor position.
+- **Do not resize the character without re-running the harness.**

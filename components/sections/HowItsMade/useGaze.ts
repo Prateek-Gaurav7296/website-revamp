@@ -26,11 +26,16 @@ export interface Gaze {
  * face's width, before the eyes are at full deflection.
  *
  * Tied to the face's own size so the character behaves the same at every
- * viewport. Set so that a cursor near the edge of the composition produces
- * close to — but not quite — full deflection: the eyes should still have
- * somewhere left to go, or they read as hitting a stop.
+ * viewport. Set so a cursor near the edge of the section reaches the end of
+ * the gaze sweep: the sequence has a fixed number of frames, and if the cursor
+ * can never reach the first or last of them the character simply never looks
+ * as far as he is able to.
+ *
+ * This is coupled to how wide the character is rendered — widen the element
+ * and the same cursor travel produces less deflection. Re-run
+ * `npm run shoot:face` after changing either.
  */
-const RANGE_MULTIPLIER = 0.62;
+const RANGE_MULTIPLIER = 0.5;
 
 /** Vertical is compressed further still; see MAX_TRAVEL_Y in the prep script. */
 const VERTICAL_RANGE_SCALE = 0.85;
@@ -79,8 +84,12 @@ export function useGaze(): Gaze {
 }
 
 /**
- * One eye's spring-smoothed gaze. Called once per eye so each gets its own
- * inertia — the small difference is what makes the pair feel alive.
+ * Spring-smoothed gaze.
+ *
+ * Two configs remain because the value they smooth used to drive two
+ * independently animated irises. The frame sequence is one image, so only
+ * `left` is used now — the character's own animation supplies the asymmetry
+ * that the second spring used to fake.
  */
 export function useEyeSpring(gaze: Gaze, side: 'left' | 'right') {
   const config = EYE_SPRING[side];

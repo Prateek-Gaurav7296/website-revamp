@@ -117,9 +117,8 @@ These are real and tracked, not oversights:
   source would still be better.
 - **The `Explore →` affordance on each workflow stage does not lead anywhere
   yet.** It needs either a destination or removal before launch.
-- **Section 04 still uses the layered PNG character, not video.** The supplied
-  director clip cannot carry a cursor-controlled gaze — it fails all four
-  checks in `scripts/check-character-video.py`. The spec and generation prompt
-  for a usable clip are in
-  [docs/CHARACTER_VIDEO_BRIEF.md](docs/CHARACTER_VIDEO_BRIEF.md); the eye rig
-  is already built and only the base layer needs swapping.
+- **The character's gaze sweep is ~4s of one clip.** He tracks the cursor
+  convincingly across it, but the range is the range the animation happened to
+  cover. A clip authored to the spec in
+  [docs/CHARACTER_VIDEO_BRIEF.md](docs/CHARACTER_VIDEO_BRIEF.md) would give a
+  wider, symmetric sweep.

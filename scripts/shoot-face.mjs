@@ -45,22 +45,30 @@ async function openSection(page) {
   });
   await page.waitForTimeout(2200);
   return page.evaluate(() => {
-    const img = document.querySelector('img[alt="A creative director, watching"]');
-    const r = img.closest('.relative').parentElement.parentElement.getBoundingClientRect();
+    const el = document.querySelector('[data-character="sequence"]');
+    const r = el.parentElement.parentElement.getBoundingClientRect();
     return { x: r.x, y: r.y, w: r.width, h: r.height };
   });
 }
 
-const irisShift = (page) =>
+/** Which frame of the gaze sweep is currently showing. */
+const activeFrame = (page) =>
   page.evaluate(() => {
-    const out = {};
-    for (const side of ['left', 'right']) {
-      const el = document.querySelector(`img[src*="iris-${side}"]`).parentElement;
-      const m = new DOMMatrix(getComputedStyle(el).transform);
-      out[side] = { x: +m.e.toFixed(2), y: +m.f.toFixed(2) };
-    }
-    return out;
+    const imgs = [...document.querySelectorAll('[data-character="sequence"] img')];
+    const i = imgs.findIndex(
+      (el) => !el.src.includes('blink') && getComputedStyle(el).opacity === '1'
+    );
+    return { index: i, total: imgs.length - 1 };
   });
+
+const blinkOpacity = (page) =>
+  page.evaluate(() =>
+    Number(
+      getComputedStyle(
+        document.querySelector('[data-character="sequence"] img[src*="blink"]')
+      ).opacity
+    )
+  );
 
 // ---------------------------------------------------------------- gaze ----
 {
@@ -75,24 +83,38 @@ const irisShift = (page) =>
       { steps: 14 }
     );
     await page.waitForTimeout(1100);
-    return irisShift(page);
+    return activeFrame(page);
   };
 
   const left = await at(0.04, 0.4);
   await page.screenshot({ path: `${OUT}/face-gaze-left.png` });
+  const mid = await at(0.5, 0.4);
+  await page.screenshot({ path: `${OUT}/face-gaze-centre.png` });
   const right = await at(0.96, 0.4);
   await page.screenshot({ path: `${OUT}/face-gaze-right.png` });
-  const down = await at(0.5, 0.98);
 
-  const travel = Math.abs(left.left.x);
-  check(travel >= 8 && travel <= 15, 'horizontal travel within 8–15px', `${travel}px`);
-  check(left.left.x < -4 && right.left.x > 4, 'eyes follow the cursor both ways',
-    `${left.left.x} → ${right.left.x}`);
-  check(Math.abs(left.left.x - left.right.x) > 0.1, 'eyes are not mechanically identical',
-    `${left.left.x} vs ${left.right.x}`);
-  check(down.left.y > 1, 'vertical tracking is live', `${down.left.y}px`);
-  check(down.left.y < travel, 'vertical travel is smaller than horizontal',
-    `${down.left.y} < ${travel}`);
+  // Frame 0 is him looking to the viewer's right, the last frame the left.
+  check(right.index <= 2, 'cursor right shows a right-looking frame',
+    `frame ${right.index}/${right.total}`);
+  check(left.index >= right.total - 2, 'cursor left shows a left-looking frame',
+    `frame ${left.index}/${left.total}`);
+  check(Math.abs(mid.index - right.total / 2) <= 3, 'cursor centre shows a mid frame',
+    `frame ${mid.index}/${mid.total}`);
+  check(left.index > mid.index && mid.index > right.index,
+    'frame index moves monotonically with the cursor',
+    `${right.index} → ${mid.index} → ${left.index}`);
+
+  // Sweep slowly across and count how many distinct frames are used: a
+  // sequence that snaps between a handful of frames reads as three fixed
+  // positions rather than continuous gaze.
+  const seen = new Set();
+  for (let i = 0; i <= 24; i++) {
+    await page.mouse.move(box.x + (box.w * i) / 24, box.y + box.h * 0.4, { steps: 2 });
+    await page.waitForTimeout(90);
+    seen.add((await activeFrame(page)).index);
+  }
+  check(seen.size >= 12, 'gaze is continuous, not a few fixed positions',
+    `${seen.size} distinct frames across one sweep`);
 
   await page.close();
 }
@@ -104,19 +126,19 @@ const irisShift = (page) =>
   console.log('\nblink');
 
   const samples = await page.evaluate(async () => {
-    const el = document.querySelector('img[src*="lid-left"]');
+    const el = document.querySelector('[data-character="sequence"] img[src*="blink"]');
     const out = [];
     const t0 = performance.now();
     while (performance.now() - t0 < 12000) {
-      out.push([performance.now() - t0, new DOMMatrix(getComputedStyle(el).transform).d]);
+      out.push([performance.now() - t0, Number(getComputedStyle(el).opacity)]);
       await new Promise((r) => setTimeout(r, 25));
     }
     return out;
   });
 
   // A double blink is one event, not two. Its second closure lands ~425ms
-  // after the first (95ms closed + 110ms opening + a 150ms pause + 70ms
-  // closing), so anything inside 700ms belongs to the blink already counted.
+  // after the first, so anything inside this window belongs to the blink
+  // already counted.
   const DOUBLE_BLINK_WINDOW = 700;
   const events = [];
   let prev = -1e9;
@@ -148,13 +170,12 @@ const irisShift = (page) =>
   await page.mouse.move(box.x + 40, box.y + box.h * 0.45, { steps: 10 });
   await page.waitForTimeout(1200);
 
-  const iris = await irisShift(page);
-  const lidClosed = await page.evaluate(
-    () => new DOMMatrix(getComputedStyle(document.querySelector('img[src*="lid-left"]')).transform).d
-  );
+  const frame = await activeFrame(page);
+  const blink = await blinkOpacity(page);
 
-  check(iris.left.x === 0 && iris.left.y === 0, 'pupils do not move', JSON.stringify(iris.left));
-  check(lidClosed < 0.05, 'blinking is off', `lid scaleY ${lidClosed}`);
+  check(Math.abs(frame.index - frame.total / 2) <= 3, 'gaze holds at the neutral frame',
+    `frame ${frame.index}/${frame.total}`);
+  check(blink < 0.05, 'blinking is off', `blink opacity ${blink}`);
   await page.screenshot({ path: `${OUT}/face-reduced-motion.png` });
   await page.close();
 }
@@ -185,9 +206,7 @@ const irisShift = (page) =>
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth
   );
   const faceVisible = await page.evaluate(() => {
-    const r = document
-      .querySelector('img[alt="A creative director, watching"]')
-      .getBoundingClientRect();
+    const r = document.querySelector('[data-character="sequence"]').getBoundingClientRect();
     return r.bottom > 100 && r.top < window.innerHeight;
   });
 

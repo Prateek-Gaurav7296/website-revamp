@@ -2,11 +2,11 @@
 
 import { motion, useReducedMotion } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CreativeFace } from './CreativeFace';
+import { CharacterSequence } from './CharacterSequence';
 import { Workflow } from './Workflow';
 import { MobileWorkflow } from './MobileWorkflow';
 import { useBlink } from './useBlink';
-import { useGaze, usePointerGaze } from './useGaze';
+import { useGaze, usePointerGaze, useEyeSpring } from './useGaze';
 import { Reveal, RevealLines } from '@/components/primitives/Reveal';
 import { Section } from '@/components/primitives/Section';
 import { processSteps } from '@/content/process';
@@ -37,6 +37,9 @@ export function HowItsMade() {
 
   const reducedMotion = useReducedMotion();
   const gaze = useGaze();
+  // One spring drives the frame index — the sequence is a single image, so the
+  // per-eye springs the layered rig used have nothing to act on here.
+  const { x: sequenceGaze } = useEyeSpring(gaze, 'left');
   const lid = useBlink(!reducedMotion && revealed);
 
   usePointerGaze(gaze, stageRef, !reducedMotion);
@@ -129,10 +132,15 @@ export function HowItsMade() {
               animate={revealed ? { opacity: 1, scale: 1 } : {}}
               transition={{ duration: 1.3, ease: EASE_FILM }}
             >
-              <CreativeFace
-                gaze={gaze}
+              <CharacterSequence
+                gaze={sequenceGaze}
                 lid={lid}
-                className="relative left-1/2 w-[150%] max-w-none -translate-x-1/2 sm:w-[125%] lg:w-full"
+                containerRef={gaze.faceRef}
+                // The stabilised crop carries background either side of the
+                // head, so the element runs wider than the head reads. These
+                // widths keep him large without the section swallowing several
+                // screens.
+                className="relative left-1/2 w-[155%] max-w-none -translate-x-1/2 sm:w-[112%] lg:w-[66%]"
               />
             </motion.div>
 

@@ -1,5 +1,13 @@
 # Director video — generation brief
 
+> **Status.** Section 04 now works from the second clip, by a different route
+> than this document assumed: rather than overlaying an iris on a locked-off
+> plate, the cursor selects which frame of the clip's own gaze sweep to show.
+> See [CHARACTER.md](CHARACTER.md). This brief stays relevant because a clip
+> authored to it would give a wider, symmetric sweep and a longer usable range
+> than the ~4 seconds currently in use — the failure analysis below is why the
+> overlay approach was abandoned.
+
 The interactive character in section 04 draws **our own iris** over the video's
 eyes so the visitor's cursor controls where he looks. That illusion only holds
 if the head is effectively locked in frame. A flat 2D iris cannot follow a head
