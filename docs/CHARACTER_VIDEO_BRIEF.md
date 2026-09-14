@@ -1,12 +1,14 @@
 # Director video — generation brief
 
-> **Status.** Section 04 now works from the second clip, by a different route
-> than this document assumed: rather than overlaying an iris on a locked-off
-> plate, the cursor selects which frame of the clip's own gaze sweep to show.
-> See [CHARACTER.md](CHARACTER.md). This brief stays relevant because a clip
-> authored to it would give a wider, symmetric sweep and a longer usable range
-> than the ~4 seconds currently in use — the failure analysis below is why the
-> overlay approach was abandoned.
+> **Status.** Section 04 works by a different route than this document
+> assumed: rather than overlaying an iris on a locked-off plate, the cursor
+> selects which frame of the clip's own gaze sweep to show. See
+> [CHARACTER.md](CHARACTER.md).
+>
+> That inverts the requirements below. A usable clip now needs a *continuous
+> gaze sweep*, not a fixed forward gaze — so if you regenerate, ask for the
+> sweep explicitly and keep the locked-off camera and locked head. The failure
+> analysis here is still why the overlay approach was abandoned.
 
 The interactive character in section 04 draws **our own iris** over the video's
 eyes so the visitor's cursor controls where he looks. That illusion only holds

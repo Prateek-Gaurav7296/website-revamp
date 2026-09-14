@@ -4,121 +4,74 @@ import { useMotionValue, useSpring, type MotionValue } from 'framer-motion';
 import { useCallback, useEffect, useRef } from 'react';
 
 /**
- * Where the character is looking, as two normalised values in [-1, 1].
+ * Where the cursor is across the scene, as 0 (far left) to 1 (far right).
  *
- * Nothing here touches React state — the pointer writes straight into
- * MotionValues and framer drives the transform off-thread. Moving the mouse
- * across this section causes zero re-renders.
+ * Nothing here touches React state — the pointer writes straight into a
+ * MotionValue and the frame swap reads it back, so moving the cursor across
+ * the whole section causes zero re-renders.
  */
 export interface Gaze {
-  x: MotionValue<number>;
-  y: MotionValue<number>;
-  /** Point the eyes at a client-space coordinate (pointer, or a focused step). */
-  lookAt: (clientX: number, clientY: number) => void;
-  /** Drift back to neutral — used when the pointer leaves the section. */
+  position: MotionValue<number>;
+  /** The element the cursor position is measured across. Attach to the scene. */
+  sceneRef: React.RefObject<HTMLDivElement>;
+  /** Point at a client-space x (the pointer, or a focused step on touch). */
+  lookAt: (clientX: number) => void;
+  /** Ease back to centre when the pointer leaves. */
   relax: () => void;
-  /** Ref for the element gaze is measured against. */
-  faceRef: React.RefObject<HTMLDivElement>;
 }
 
 /**
- * How far the pointer must travel from the face's centre, as a multiple of the
- * face's width, before the eyes are at full deflection.
+ * Spring on the cursor position.
  *
- * Tied to the face's own size so the character behaves the same at every
- * viewport. Set so a cursor near the edge of the section reaches the end of
- * the gaze sweep: the sequence has a fixed number of frames, and if the cursor
- * can never reach the first or last of them the character simply never looks
- * as far as he is able to.
- *
- * This is coupled to how wide the character is rendered — widen the element
- * and the same cursor travel produces less deflection. Re-run
- * `npm run shoot:face` after changing either.
+ * The frames are the animation, so this only has to take the edge off: enough
+ * inertia that a flicked cursor does not snap the character instantly, little
+ * enough that he does not lag behind it. Overshoot is off — an eye that
+ * overshoots and settles back reads as cartoon.
  */
-const RANGE_MULTIPLIER = 0.5;
-
-/** Vertical is compressed further still; see MAX_TRAVEL_Y in the prep script. */
-const VERTICAL_RANGE_SCALE = 0.85;
-
-/**
- * Eye springs, tuned per eye.
- *
- * `stiffness` high enough to feel attentive, `damping` high enough that the
- * iris settles rather than wobbling — overshoot on an eye reads as cartoon.
- * The two eyes differ by a couple of percent so they are not mathematically
- * identical, which is what stops the pair looking like one rigid object.
- */
-export const EYE_SPRING = {
-  left: { stiffness: 170, damping: 22, mass: 0.9, restDelta: 0.0005 },
-  right: { stiffness: 162, damping: 23, mass: 0.94, restDelta: 0.0005 },
-} as const;
+const SPRING = { stiffness: 190, damping: 26, mass: 0.85, restDelta: 0.0005 } as const;
 
 export function useGaze(): Gaze {
-  const faceRef = useRef<HTMLDivElement>(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const position = useMotionValue(0.5);
 
-  const lookAt = useCallback((clientX: number, clientY: number) => {
-    const el = faceRef.current;
-    if (!el) return;
+  const lookAt = useCallback(
+    (clientX: number) => {
+      const el = sceneRef.current;
+      if (!el) return;
+      const box = el.getBoundingClientRect();
+      if (!box.width) return;
+      const t = (clientX - box.left) / box.width;
+      position.set(t < 0 ? 0 : t > 1 ? 1 : t);
+    },
+    [position]
+  );
 
-    const box = el.getBoundingClientRect();
-    if (!box.width) return;
+  const relax = useCallback(() => position.set(0.5), [position]);
 
-    const cx = box.left + box.width / 2;
-    // Aim from the eyes, which sit above the middle of the head, not from the
-    // centre of the box — otherwise the character reads as looking too low.
-    const cy = box.top + box.height * 0.42;
+  return { position, sceneRef, lookAt, relax };
+}
 
-    const range = box.width * RANGE_MULTIPLIER;
-    x.set(clamp((clientX - cx) / range, -1, 1));
-    y.set(clamp((clientY - cy) / (range * VERTICAL_RANGE_SCALE), -1, 1));
-  }, [x, y]);
-
-  const relax = useCallback(() => {
-    x.set(0);
-    y.set(0);
-  }, [x, y]);
-
-  return { x, y, lookAt, relax, faceRef };
+/** Spring-smoothed cursor position, in the same 0..1 space. */
+export function useGazeSpring(gaze: Gaze) {
+  return useSpring(gaze.position, SPRING);
 }
 
 /**
- * Spring-smoothed gaze.
- *
- * Two configs remain because the value they smooth used to drive two
- * independently animated irises. The frame sequence is one image, so only
- * `left` is used now — the character's own animation supplies the asymmetry
- * that the second spring used to fake.
+ * Drive the gaze from the pointer while it is over the scene, and relax when
+ * it leaves. The listener is passive and does nothing beyond a rect read and
+ * one MotionValue write.
  */
-export function useEyeSpring(gaze: Gaze, side: 'left' | 'right') {
-  const config = EYE_SPRING[side];
-  return {
-    x: useSpring(gaze.x, config),
-    y: useSpring(gaze.y, config),
-  };
-}
-
-/**
- * Drives gaze from the pointer while it is over `element`, and relaxes when it
- * leaves. Listener is passive and does no work beyond a rect read and two
- * MotionValue writes.
- */
-export function usePointerGaze(
-  gaze: Gaze,
-  target: React.RefObject<HTMLElement>,
-  enabled: boolean
-) {
-  const { lookAt, relax } = gaze;
+export function usePointerGaze(gaze: Gaze, enabled: boolean) {
+  const { lookAt, relax, sceneRef } = gaze;
 
   useEffect(() => {
-    const el = target.current;
+    const el = sceneRef.current;
     if (!el || !enabled) return;
 
-    // Coarse pointers (touch) never hover; gaze is driven by the active step.
+    // Coarse pointers never hover; there the active stage drives the gaze.
     if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
 
-    const onMove = (event: PointerEvent) => lookAt(event.clientX, event.clientY);
+    const onMove = (event: PointerEvent) => lookAt(event.clientX);
 
     el.addEventListener('pointermove', onMove, { passive: true });
     el.addEventListener('pointerleave', relax, { passive: true });
@@ -127,9 +80,5 @@ export function usePointerGaze(
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerleave', relax);
     };
-  }, [target, lookAt, relax, enabled]);
-}
-
-function clamp(v: number, lo: number, hi: number) {
-  return v < lo ? lo : v > hi ? hi : v;
+  }, [sceneRef, lookAt, relax, enabled]);
 }

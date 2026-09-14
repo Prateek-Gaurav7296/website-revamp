@@ -40,7 +40,10 @@ export function Workflow({ openIndex, onOpen, revealed }: WorkflowProps) {
         transition={{ duration: 2.6, ease: 'easeInOut', delay: 0.9 }}
       />
 
-      <ol className="flex items-start gap-6 pt-8 sm:gap-8 lg:gap-10">
+      {/* Centred, not flush left: the stages size to their content, so left
+          alignment leaves all the slack on one side and the group reads as
+          having slipped. */}
+      <ol className="flex items-start justify-center gap-6 pt-8 sm:gap-8 lg:gap-12">
         {processSteps.map((step, index) => (
           <li key={step.number} className="contents">
             <WorkflowStep

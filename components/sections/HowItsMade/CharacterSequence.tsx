@@ -1,89 +1,107 @@
-/* eslint-disable @next/next/no-img-element -- The 36 gaze frames are stacked and
- * swapped by direct DOM writes at pointer frequency. next/image wraps each in
- * its own positioned element and adds loader work per frame, which fights both
- * the stacking and the hot path; they are pre-sized WebP already. */
+/* eslint-disable @next/next/no-img-element -- The frames are stacked and swapped
+ * by direct DOM writes at pointer frequency. next/image wraps each in its own
+ * positioned element and adds loader work per frame, which fights both the
+ * stacking and the hot path; these are pre-sized WebP already. */
 'use client';
 
-import { animate, useMotionValue, useMotionValueEvent, type MotionValue } from 'framer-motion';
-import { useEffect, useRef, type RefObject } from 'react';
-import manifest from '@/content/gaze-sequence.json';
+import { useMotionValueEvent, type MotionValue } from 'framer-motion';
+import { useEffect, useRef } from 'react';
+import manifest from '@/content/gaze-frames.json';
 import { cn } from '@/lib/cn';
 
 interface CharacterSequenceProps {
-  /** Spring-smoothed gaze in [-1, 1]; +1 means the cursor is to the right. */
-  gaze: MotionValue<number>;
-  /** 0 open → 1 closed. */
-  lid: MotionValue<number>;
-  /**
-   * The element gaze is measured against. This must be the character itself:
-   * `useGaze` computes the cursor's offset from this box's centre, and returns
-   * without doing anything if it is never attached.
-   */
-  containerRef?: RefObject<HTMLDivElement>;
+  /** Spring-smoothed cursor position across the scene, 0 (left) to 1 (right). */
+  position: MotionValue<number>;
   className?: string;
-  onReady?: () => void;
 }
 
 const FRAMES = manifest.frames;
-const SRC = (i: number) => `/character/gaze/${String(i).padStart(2, '0')}.webp`;
+const SRC = (i: number) => `/character/frames/${String(i).padStart(3, '0')}.webp`;
 
 /**
- * The director, as a cursor-scrubbed frame sequence.
+ * Frame 0 has him looking to the VIEWER'S LEFT, and the last frame to the
+ * viewer's right — the sweep runs left to right across the screen.
  *
- * Rather than drawing our own iris over a video, the cursor picks which frame
- * of his gaze sweep to show. His real, fully rendered eyes do the looking — so
- * there is no overlay to register, nothing to mask, and the lighting, hair and
- * head pose are all genuinely his.
+ * So the cursor maps straight onto the clip: the left edge of the scene shows
+ * frame 0, a step right shows the next, and the right edge shows the last.
  *
- * The frames are built by scripts/build-gaze-sequence.py, which stabilises the
- * head (it travels 88px and shrinks 12% across the sweep), drops the blink, and
- * resamples so cursor travel maps onto continuous eye movement. Frame 0 is him
- * looking to the viewer's right; the last frame is the viewer's left.
- *
- * Every frame sits in the DOM at opacity 0 and visibility is swapped by direct
- * style writes from a MotionValue subscription — no React state on the pointer
- * path, so scrubbing the whole sequence costs zero re-renders.
+ * Verify this by eye against the built frames before trusting it — zoomed out,
+ * the iris offset is easy to read backwards, and getting it wrong makes the
+ * character look away from the cursor instead of at it.
  */
-export function CharacterSequence({ gaze, lid, containerRef, className, onReady }: CharacterSequenceProps) {
-  const frameRefs = useRef<(HTMLImageElement | null)[]>([]);
-  const blinkRef = useRef<HTMLImageElement>(null);
+const REVERSE_SWEEP = false;
+
+/**
+ * The clip blinks twice: frames 2-6 and 53-57. Mapped literally, those become
+ * cursor positions where the character sits with his eyes shut — one at the
+ * right edge of the scene and one just left of centre, which is where a cursor
+ * rests most of the time. Sweeping past a blink looks natural; parking on one
+ * looks broken.
+ *
+ * So a blink slice shows the nearest open-eyed frame instead. Every frame still
+ * owns its pixel range; only what is drawn during those two short bands
+ * changes, and the mapping stays monotonic and continuous.
+ *
+ * Set this to false for the literal frame-for-pixel mapping, blinks included.
+ */
+const SKIP_BLINK_FRAMES = true;
+
+/** Nearest frame that is not part of a blink, for each frame index. */
+const RESOLVED: number[] = (() => {
+  const blinks = new Set(manifest.blinkFrames ?? []);
+  return Array.from({ length: FRAMES }, (_, i) => {
+    if (!SKIP_BLINK_FRAMES || !blinks.has(i)) return i;
+    for (let d = 1; d < FRAMES; d++) {
+      if (i - d >= 0 && !blinks.has(i - d)) return i - d;
+      if (i + d < FRAMES && !blinks.has(i + d)) return i + d;
+    }
+    return i;
+  });
+})();
+
+/**
+ * The director, as a cursor-scrubbed frame set.
+ *
+ * Every frame of the clip owns an equal slice of the scene's width: the cursor
+ * at one edge shows the first frame, a step right shows the next, and so on to
+ * the far edge. His real, fully rendered eyes do the looking, so there is no
+ * overlay to keep registered and nothing to mask — the lighting, hair,
+ * headphones and head movement are all genuinely his, and the clip's own
+ * blinks are simply part of the sweep.
+ *
+ * Every frame sits in the DOM at opacity 0 and the active one is swapped by a
+ * direct style write from a MotionValue subscription, so scrubbing the whole
+ * set costs zero React re-renders.
+ */
+export function CharacterSequence({ position, className }: CharacterSequenceProps) {
+  const refs = useRef<(HTMLImageElement | null)[]>([]);
   const current = useRef(-1);
-  const loaded = useRef(0);
 
   const show = (index: number) => {
     if (index === current.current) return;
-    const prev = frameRefs.current[current.current];
-    const next = frameRefs.current[index];
+    const prev = refs.current[current.current];
+    const next = refs.current[index];
     if (prev) prev.style.opacity = '0';
     if (next) next.style.opacity = '1';
     current.current = index;
   };
 
-  // Paint the neutral frame immediately so there is never an empty box.
+  const frameFor = (t: number) => {
+    const slice = REVERSE_SWEEP ? 1 - t : t;
+    const index = Math.max(0, Math.min(FRAMES - 1, Math.floor(slice * FRAMES)));
+    return RESOLVED[index];
+  };
+
+  // Paint the neutral frame immediately so the box is never empty.
   useEffect(() => {
-    show(Math.floor(FRAMES / 2));
+    show(frameFor(0.5));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useMotionValueEvent(gaze, 'change', (value) => {
-    // Cursor right (+1) → he looks to the viewer's right → frame 0.
-    const t = (1 - (value + 1) / 2) * (FRAMES - 1);
-    show(Math.max(0, Math.min(FRAMES - 1, Math.round(t))));
-  });
-
-  useMotionValueEvent(lid, 'change', (value) => {
-    const el = blinkRef.current;
-    if (el) el.style.opacity = String(value);
-  });
-
-  const onLoad = () => {
-    loaded.current += 1;
-    if (loaded.current === FRAMES) onReady?.();
-  };
+  useMotionValueEvent(position, 'change', (t) => show(frameFor(t)));
 
   return (
     <div
-      ref={containerRef}
       className={cn('relative', className)}
       style={{ aspectRatio: manifest.aspect }}
       data-character="sequence"
@@ -94,57 +112,18 @@ export function CharacterSequence({ gaze, lid, containerRef, className, onReady 
         <img
           key={i}
           ref={(el) => {
-            frameRefs.current[i] = el;
+            refs.current[i] = el;
           }}
           src={SRC(i)}
           alt=""
           draggable={false}
-          onLoad={onLoad}
-          // The middle frame is what shows first, so it is the one that must
-          // not wait in the queue behind thirty-five others.
-          fetchPriority={i === Math.floor(FRAMES / 2) ? 'high' : 'low'}
+          // The frame shown first must not queue behind ninety-nine others.
+          fetchPriority={i === frameFor(0.5) ? 'high' : 'low'}
+          loading={i === frameFor(0.5) ? 'eager' : 'lazy'}
           className="absolute inset-0 h-full w-full select-none object-contain"
           style={{ opacity: 0 }}
         />
       ))}
-
-      <img
-        ref={blinkRef}
-        src={`/character/gaze/${manifest.blink}`}
-        alt=""
-        draggable={false}
-        className="absolute inset-0 h-full w-full select-none object-contain"
-        style={{ opacity: 0 }}
-      />
     </div>
   );
-}
-
-/**
- * Preload every frame before the sequence goes live. Scrubbing through images
- * the browser has not decoded yet shows gaps, which reads as the character
- * stuttering rather than as a loading state.
- */
-export function usePreloadedSequence() {
-  const ready = useMotionValue(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    let done = 0;
-
-    for (let i = 0; i < FRAMES; i++) {
-      const img = new Image();
-      img.onload = img.onerror = () => {
-        done += 1;
-        if (!cancelled && done === FRAMES) animate(ready, 1, { duration: 0.4 });
-      };
-      img.src = SRC(i);
-    }
-
-    return () => {
-      cancelled = true;
-    };
-  }, [ready]);
-
-  return ready;
 }

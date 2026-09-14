@@ -117,8 +117,9 @@ These are real and tracked, not oversights:
   source would still be better.
 - **The `Explore →` affordance on each workflow stage does not lead anywhere
   yet.** It needs either a destination or removal before launch.
-- **The character's gaze sweep is ~4s of one clip.** He tracks the cursor
-  convincingly across it, but the range is the range the animation happened to
-  cover. A clip authored to the spec in
-  [docs/CHARACTER_VIDEO_BRIEF.md](docs/CHARACTER_VIDEO_BRIEF.md) would give a
-  wider, symmetric sweep.
+- **The clip carries a generator watermark** — a small four-point sparkle in
+  the lower right. It is faint under the section's gradient but visible.
+  Removing it means retouching every frame; a clean re-render is better.
+- **The character blinks twice mid-clip.** Those two slices of cursor travel
+  draw a neighbouring open-eyed frame instead, so he never sits with his eyes
+  shut. See [docs/CHARACTER.md](docs/CHARACTER.md).

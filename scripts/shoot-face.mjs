@@ -10,12 +10,11 @@
  * measured transforms instead.
  *
  * Checks, in order:
- *   1. horizontal gaze reaches 8–15px in each direction
- *   2. the two eyes do not move identically
- *   3. vertical gaze is real, and smaller than horizontal
- *   4. the lid actually closes, at randomised intervals
- *   5. reduced motion disables both
- *   6. no horizontal overflow on a phone
+ *   1. the cursor edges select the first and last frames of the clip
+ *   2. the frame index moves monotonically with the cursor
+ *   3. a slow sweep touches enough frames to read as continuous
+ *   4. reduced motion holds the neutral frame
+ *   5. no horizontal overflow on a phone, head still pinned
  *
  * Screenshots land in .screenshots/face-*.png.
  */
@@ -35,18 +34,31 @@ const check = (ok, label, detail) => {
 
 const browser = await chromium.launch();
 
-/** Scroll the character into view and return the interactive stage's box. */
+/**
+ * Scroll the scene into view and return its box.
+ *
+ * The scroll offset is computed from the scene itself rather than hard-coded:
+ * a fixed offset breaks the moment the section's height changes, and it breaks
+ * silently — the cursor lands on the navbar, the scene sees pointerleave, and
+ * every reading comes back as the relaxed neutral frame.
+ */
 async function openSection(page) {
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(2000);
   await page.evaluate(() => {
     document.documentElement.style.scrollBehavior = 'auto';
-    window.scrollTo(0, document.getElementById('process').offsetTop + 430);
+    const el = document.querySelector('[data-character="sequence"]');
+    const scene = el.closest('div[class*="mt-10"]') || el;
+    const top = scene.getBoundingClientRect().top + window.scrollY;
+    // Leave room for the fixed navbar so the pointer cannot land on it.
+    window.scrollTo(0, Math.max(0, top - 140));
   });
   await page.waitForTimeout(2200);
+
   return page.evaluate(() => {
     const el = document.querySelector('[data-character="sequence"]');
-    const r = el.parentElement.parentElement.getBoundingClientRect();
+    const scene = el.closest('div[class*="mt-10"]') || el.parentElement.parentElement;
+    const r = scene.getBoundingClientRect();
     return { x: r.x, y: r.y, w: r.width, h: r.height };
   });
 }
@@ -55,20 +67,11 @@ async function openSection(page) {
 const activeFrame = (page) =>
   page.evaluate(() => {
     const imgs = [...document.querySelectorAll('[data-character="sequence"] img')];
-    const i = imgs.findIndex(
-      (el) => !el.src.includes('blink') && getComputedStyle(el).opacity === '1'
-    );
+    const i = imgs.findIndex((el) => getComputedStyle(el).opacity === '1');
     return { index: i, total: imgs.length - 1 };
   });
 
-const blinkOpacity = (page) =>
-  page.evaluate(() =>
-    Number(
-      getComputedStyle(
-        document.querySelector('[data-character="sequence"] img[src*="blink"]')
-      ).opacity
-    )
-  );
+
 
 // ---------------------------------------------------------------- gaze ----
 {
@@ -94,65 +97,33 @@ const blinkOpacity = (page) =>
   await page.screenshot({ path: `${OUT}/face-gaze-right.png` });
 
   // Frame 0 is him looking to the viewer's right, the last frame the left.
-  check(right.index <= 2, 'cursor right shows a right-looking frame',
-    `frame ${right.index}/${right.total}`);
-  check(left.index >= right.total - 2, 'cursor left shows a left-looking frame',
+  // The clip sweeps viewer-left to viewer-right, so the cursor maps straight
+  // onto it: the left edge selects frame 0, the right edge the last frame.
+  const edge = Math.max(3, Math.round(right.total * 0.06));
+  check(left.index <= edge, 'cursor left shows a left-looking frame',
     `frame ${left.index}/${left.total}`);
-  check(Math.abs(mid.index - right.total / 2) <= 3, 'cursor centre shows a mid frame',
+  check(right.index >= right.total - edge, 'cursor right shows a right-looking frame',
+    `frame ${right.index}/${right.total}`);
+  check(Math.abs(mid.index - right.total / 2) <= edge, 'cursor centre shows a mid frame',
     `frame ${mid.index}/${mid.total}`);
-  check(left.index > mid.index && mid.index > right.index,
+  check(left.index < mid.index && mid.index < right.index,
     'frame index moves monotonically with the cursor',
-    `${right.index} → ${mid.index} → ${left.index}`);
+    `${left.index} → ${mid.index} → ${right.index}`);
 
   // Sweep slowly across and count how many distinct frames are used: a
   // sequence that snaps between a handful of frames reads as three fixed
   // positions rather than continuous gaze.
+  // Let the spring settle at each stop. Sampling faster than it settles reads
+  // mid-flight values that cluster, and measures the test's impatience rather
+  // than the mapping.
   const seen = new Set();
-  for (let i = 0; i <= 24; i++) {
-    await page.mouse.move(box.x + (box.w * i) / 24, box.y + box.h * 0.4, { steps: 2 });
-    await page.waitForTimeout(90);
+  for (let i = 0; i <= 20; i++) {
+    await page.mouse.move(box.x + (box.w * i) / 20, box.y + box.h * 0.45, { steps: 4 });
+    await page.waitForTimeout(320);
     seen.add((await activeFrame(page)).index);
   }
-  check(seen.size >= 12, 'gaze is continuous, not a few fixed positions',
+  check(seen.size >= 15, 'gaze is continuous, not a few fixed positions',
     `${seen.size} distinct frames across one sweep`);
-
-  await page.close();
-}
-
-// --------------------------------------------------------------- blink ----
-{
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-  await openSection(page);
-  console.log('\nblink');
-
-  const samples = await page.evaluate(async () => {
-    const el = document.querySelector('[data-character="sequence"] img[src*="blink"]');
-    const out = [];
-    const t0 = performance.now();
-    while (performance.now() - t0 < 12000) {
-      out.push([performance.now() - t0, Number(getComputedStyle(el).opacity)]);
-      await new Promise((r) => setTimeout(r, 25));
-    }
-    return out;
-  });
-
-  // A double blink is one event, not two. Its second closure lands ~425ms
-  // after the first, so anything inside this window belongs to the blink
-  // already counted.
-  const DOUBLE_BLINK_WINDOW = 700;
-  const events = [];
-  let prev = -1e9;
-  for (const [t, d] of samples) {
-    if (d > 0.85 && t - prev > DOUBLE_BLINK_WINDOW) events.push(Math.round(t));
-    if (d > 0.85) prev = t;
-  }
-  const gaps = events.slice(1).map((t, i) => t - events[i]);
-
-  check(events.length >= 2, 'lid closes repeatedly', `${events.length} blinks in 12s`);
-  check(Math.max(...samples.map((s) => s[1])) > 0.95, 'lid reaches full closure');
-  check(gaps.every((g) => g > 2000 && g < 6000), 'blink gaps are randomised, not fixed',
-    gaps.join('ms, ') + 'ms');
-  check(new Set(gaps).size === gaps.length, 'no two gaps are identical');
 
   await page.close();
 }
@@ -171,11 +142,8 @@ const blinkOpacity = (page) =>
   await page.waitForTimeout(1200);
 
   const frame = await activeFrame(page);
-  const blink = await blinkOpacity(page);
-
-  check(Math.abs(frame.index - frame.total / 2) <= 3, 'gaze holds at the neutral frame',
+  check(Math.abs(frame.index - frame.total / 2) <= 4, 'gaze holds at the neutral frame',
     `frame ${frame.index}/${frame.total}`);
-  check(blink < 0.05, 'blinking is off', `blink opacity ${blink}`);
   await page.screenshot({ path: `${OUT}/face-reduced-motion.png` });
   await page.close();
 }

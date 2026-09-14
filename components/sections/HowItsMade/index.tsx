@@ -1,12 +1,11 @@
 'use client';
 
 import { motion, useReducedMotion } from 'framer-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { CharacterSequence } from './CharacterSequence';
 import { Workflow } from './Workflow';
 import { MobileWorkflow } from './MobileWorkflow';
-import { useBlink } from './useBlink';
-import { useGaze, usePointerGaze, useEyeSpring } from './useGaze';
+import { useGaze, useGazeSpring, usePointerGaze } from './useGaze';
 import { Reveal, RevealLines } from '@/components/primitives/Reveal';
 import { Section } from '@/components/primitives/Section';
 import { processSteps } from '@/content/process';
@@ -30,19 +29,15 @@ import { EASE_FILM } from '@/lib/motion';
  * eyes, which have to stay clear because they are the interaction.
  */
 export function HowItsMade() {
-  const stageRef = useRef<HTMLDivElement>(null);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [activeStep, setActiveStep] = useState(0);
   const [revealed, setRevealed] = useState(false);
 
   const reducedMotion = useReducedMotion();
   const gaze = useGaze();
-  // One spring drives the frame index — the sequence is a single image, so the
-  // per-eye springs the layered rig used have nothing to act on here.
-  const { x: sequenceGaze } = useEyeSpring(gaze, 'left');
-  const lid = useBlink(!reducedMotion && revealed);
+  const position = useGazeSpring(gaze);
 
-  usePointerGaze(gaze, stageRef, !reducedMotion);
+  usePointerGaze(gaze, !reducedMotion);
 
   /**
    * Touch: there is no cursor, so the active stage drives the gaze instead.
@@ -53,12 +48,14 @@ export function HowItsMade() {
       setActiveStep(index);
       if (reducedMotion) return;
 
-      const el = stageRef.current;
+      const el = gaze.sceneRef.current;
       if (!el || window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
 
+      // Place a virtual cursor where that stage sits along the scene, so he
+      // turns toward whatever the visitor is reading.
       const box = el.getBoundingClientRect();
-      const spread = (index / (processSteps.length - 1)) * 2 - 1; // -1 → +1
-      gaze.lookAt(box.left + box.width * (0.5 + spread * 0.42), box.top + box.height * 0.72);
+      const across = index / (processSteps.length - 1);
+      gaze.lookAt(box.left + box.width * (0.12 + across * 0.76));
     },
     [gaze, reducedMotion]
   );
@@ -66,7 +63,7 @@ export function HowItsMade() {
   // Hold the entrance until the section is actually on screen, so the line
   // draws as the visitor arrives rather than before they ever see it.
   useEffect(() => {
-    const el = stageRef.current;
+    const el = gaze.sceneRef.current;
     if (!el) return;
 
     const observer = new IntersectionObserver(
@@ -80,7 +77,7 @@ export function HowItsMade() {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [gaze.sceneRef]);
 
   return (
     <Section
@@ -106,7 +103,9 @@ export function HowItsMade() {
 
       {/* The stage. Gaze is measured against this whole box, so the character
           reacts to the composition rather than only to his own head. */}
-      <div ref={stageRef} className="relative mt-10 md:mt-4">
+      {/* The scene. The cursor position is measured across this box, so the
+          first and last frames land on its left and right edges. */}
+      <div ref={gaze.sceneRef} className="relative mt-10 md:mt-4">
         {/*
           Sticky lives here, not on the clipped box below: a sticky element can
           only travel inside its own parent, and that box's parent ends exactly
@@ -133,14 +132,15 @@ export function HowItsMade() {
               transition={{ duration: 1.3, ease: EASE_FILM }}
             >
               <CharacterSequence
-                gaze={sequenceGaze}
-                lid={lid}
-                containerRef={gaze.faceRef}
-                // The stabilised crop carries background either side of the
-                // head, so the element runs wider than the head reads. These
-                // widths keep him large without the section swallowing several
-                // screens.
-                className="relative left-1/2 w-[155%] max-w-none -translate-x-1/2 sm:w-[112%] lg:w-[66%]"
+                position={position}
+                // The clip is used uncropped, and its 16:9 frame carries a lot
+                // of empty background either side of the head — so the element
+                // has to run wide for the head itself to read large. At lg it
+                // is exactly the page width, which keeps the whole frame
+                // visible; the narrower breakpoints oversize it and let the
+                // plate clip, because on a phone the alternative is a head the
+                // size of a postage stamp.
+                className="relative left-1/2 w-[190%] max-w-none -translate-x-1/2 sm:w-[140%] lg:w-full"
               />
             </motion.div>
 
