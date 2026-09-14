@@ -43,9 +43,11 @@ one file.
 Every frame on the Work page must be a frame from an actual film. This is the
 one content rule with a hard edge.
 
-**Layout is not content.** How many columns a film spans lives in `LAYOUT` in
-`components/sections/WorkShowcase.tsx`. Reorder films here; re-cut the page
-there. Each grid row must still sum to 12 columns.
+**Layout is not content.** Which tile a film occupies lives in `TILES` in
+`components/sections/WorkShowcase.tsx`. Reorder films here; re-cut the wall
+there. The mosaic is sized to fit one screen, so adding a seventh film means
+re-cutting `TILES` rather than letting the grid grow — keep every column
+covered in every row or the grid will show holes.
 
 ## Process
 

@@ -14,8 +14,15 @@ interface FilmFrameProps {
   /** Position in the grid — printed as the frame's slate number. */
   index: number;
   onOpen: (film: Film) => void;
-  /** Tailwind aspect class. The Work grid varies this row to row. */
+  /** Tailwind aspect class. Ignored when `fill` is set. */
   ratio?: string;
+  /**
+   * Fill the parent instead of setting an aspect ratio, and lay the caption
+   * over the image rather than beneath it. The Work mosaic sizes its tiles
+   * from the grid, so a frame that insists on its own aspect would break the
+   * one-screen fit.
+   */
+  fill?: boolean;
   priority?: boolean;
   className?: string;
 }
@@ -33,7 +40,15 @@ interface FilmFrameProps {
  * on a spring (interruptible — grab it mid-flight and it obeys), the loop
  * starts, and a gold rule wipes across the slate.
  */
-export function FilmFrame({ film, index, onOpen, ratio = 'aspect-video', priority, className }: FilmFrameProps) {
+export function FilmFrame({
+  film,
+  index,
+  onOpen,
+  ratio = 'aspect-video',
+  fill = false,
+  priority,
+  className,
+}: FilmFrameProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [posterSrc, setPosterSrc] = useState(
     film.posterSrc ?? getYouTubePoster(film.youtubeUrl) ?? undefined
@@ -66,10 +81,14 @@ export function FilmFrame({ film, index, onOpen, ratio = 'aspect-video', priorit
       initial="rest"
       whileHover="hover"
       whileFocus="hover"
-      className={cn('group block w-full cursor-pointer text-left', className)}
+      className={cn(
+        'group block w-full cursor-pointer text-left',
+        fill && 'relative h-full overflow-hidden',
+        className
+      )}
       aria-label={`Play ${film.title} — ${film.client}`}
     >
-      <div className={cn('relative w-full overflow-hidden bg-surface', ratio)}>
+      <div className={cn('relative w-full overflow-hidden bg-surface', fill ? 'h-full' : ratio)}>
         <motion.div
           className="absolute inset-0"
           variants={{ rest: { scale: 1 }, hover: { scale: 1.035 } }}
@@ -117,39 +136,59 @@ export function FilmFrame({ film, index, onOpen, ratio = 'aspect-video', priorit
         </motion.span>
       </div>
 
-      {/* Slate line: number and title left, client/year right. */}
-      <div className="relative pt-4">
-        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-line" />
-        <motion.span
-          aria-hidden="true"
-          className="absolute inset-x-0 top-0 h-px origin-left bg-gold"
-          variants={{ rest: { scaleX: 0 }, hover: { scaleX: 1 } }}
-          transition={{ duration: DURATION.state, ease: EASE_FILM }}
-        />
-
-        {/* flex-wrap, not shrink-0: on a narrow frame the metadata drops to
-            its own line rather than overflowing the grid column. */}
-        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-          <div className="flex min-w-0 items-baseline gap-4">
+      {fill ? (
+        /* Overlaid caption. The scrim is a gradient on the tile itself rather
+           than a panel, so the image still reads as a frame, not a card. */
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 p-3 lg:p-4">
+          <div
+            aria-hidden="true"
+            className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-stage via-stage/70 to-transparent"
+          />
+          <div className="relative">
             <motion.span
-              className="shrink-0 font-mono text-label uppercase"
-              variants={{ rest: { color: '#2A2A2A' }, hover: { color: '#D4A24C' } }}
-              transition={{ duration: DURATION.tap }}
-            >
-              F{slate}
-            </motion.span>
-            <h3 className="text-lg font-bold leading-tight text-ink sm:text-xl">{film.title}</h3>
+              aria-hidden="true"
+              className="mb-2 block h-px origin-left bg-gold"
+              variants={{ rest: { scaleX: 0 }, hover: { scaleX: 1 } }}
+              transition={{ duration: DURATION.state, ease: EASE_FILM }}
+            />
+            <p className="label text-muted">
+              F{slate} <span className="text-line">/</span> {film.client}
+            </p>
+            <h3 className="mt-1 text-sm font-bold leading-tight text-ink lg:text-base">
+              {film.title}
+            </h3>
+          </div>
+        </div>
+      ) : (
+        <div className="relative pt-4">
+          <span aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-line" />
+          <motion.span
+            aria-hidden="true"
+            className="absolute inset-x-0 top-0 h-px origin-left bg-gold"
+            variants={{ rest: { scaleX: 0 }, hover: { scaleX: 1 } }}
+            transition={{ duration: DURATION.state, ease: EASE_FILM }}
+          />
+
+          <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+            <div className="flex min-w-0 items-baseline gap-4">
+              <motion.span
+                className="shrink-0 font-mono text-label uppercase"
+                variants={{ rest: { color: '#2A2A2A' }, hover: { color: '#D4A24C' } }}
+                transition={{ duration: DURATION.tap }}
+              >
+                F{slate}
+              </motion.span>
+              <h3 className="text-lg font-bold leading-tight text-ink sm:text-xl">{film.title}</h3>
+            </div>
+
+            <p className="label text-muted">
+              {film.client} <span className="text-line">/</span> {film.year}
+            </p>
           </div>
 
-          <p className="label text-muted">
-            {film.client} <span className="text-line">/</span> {film.year}
-          </p>
+          <p className="label mt-2 text-line">{film.format}</p>
         </div>
-
-        {/* Flush with the slate number — an arbitrary indent stops lining up
-            as soon as the row above wraps. */}
-        <p className="label mt-2 text-line">{film.format}</p>
-      </div>
+      )}
     </motion.button>
   );
 }

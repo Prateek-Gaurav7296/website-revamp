@@ -129,7 +129,7 @@ animation whose only purpose is to prove animation was possible.
 
 | Breakpoint | Behaviour |
 |---|---|
-| Mobile (`< 768px`) | Work becomes a snapped horizontal strip; Track motion off; chapter rail hidden; type scale compresses but keeps both families |
+| Mobile (`< 768px`) | Work becomes a snapped horizontal strip; chapter rail hidden; type scale compresses but keeps both families |
 | Tablet (`768–1279px`) | Asymmetric Work grid, simplified offsets |
 | Desktop (`≥ 1280px`) | Full motion, full asymmetry, chapter rail visible from `xl` |
 

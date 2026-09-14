@@ -84,6 +84,20 @@
   }
 }
 
+/*
+ * The testimonial strip. It travels exactly half the track's width — the list
+ * is rendered twice — so the loop point lands on an identical frame and there
+ * is no visible reset.
+ */
+@keyframes marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
 @layer utilities {
   /* Track motion: a slow scroll-linked push on background plates only. */
   .plate-track {
