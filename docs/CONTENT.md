@@ -1,0 +1,95 @@
+# Content guide
+
+All copy and data live in `content/`. Nothing in `components/` should contain a
+sentence a client would read. Editing the site's words means editing exactly
+one file.
+
+| File | Owns |
+|---|---|
+| `site.ts` | Name, tagline, meta description, nav links, social links, contact email |
+| `work.ts` | The portfolio films and the YouTube playlist link |
+| `process.ts` | The five process steps |
+| `proof.ts` | The six statistics |
+| `testimonials.ts` | Client quotes |
+| `team.ts` | Founder bios |
+
+## Work
+
+```ts
+{
+  id: 'swift-tv',
+  title: 'A channel with a point of view',
+  client: 'Swift TV',
+  format: 'Brand film',
+  year: '2025',
+  youtubeUrl: 'https://youtu.be/…',
+  previewSrc: '/videos/hero.mp4',   // optional — self-hosted master
+  posterTime: 3,                    // optional — frame to rest on, seconds
+  posterSrc: '/…'                   // optional — a real still from the film
+}
+```
+
+**How a film is displayed**
+
+1. With `previewSrc`, the `<video>` element is both the still (seeked to
+   `posterTime`) and the muted hover loop. Best quality, no outbound click.
+2. Without it, the frame uses the film's YouTube poster and clicking opens the
+   film in the on-page lightbox. Still no outbound click.
+
+**Upgrading a film to native playback:** drop an mp4 in `public/videos/`, set
+`previewSrc` and `posterTime`. Nothing else changes.
+
+**Never point `posterSrc` at illustration, stock art or a generated key visual.**
+Every frame on the Work page must be a frame from an actual film. This is the
+one content rule with a hard edge.
+
+**Layout is not content.** How many columns a film spans lives in `LAYOUT` in
+`components/sections/WorkShowcase.tsx`. Reorder films here; re-cut the page
+there. Each grid row must still sum to 12 columns.
+
+## Proof
+
+Icons come from `public/icons/`. Values are strings (`'144%'`, `'2×'`) so the
+section never has to reason about formatting. Add or remove a stat freely —
+the grid draws its own dividers and does not depend on the count.
+
+## Lead capture
+
+`POST /api/leads` validates and writes to a Supabase `leads` table:
+
+```sql
+create table leads (
+  id           bigint generated always as identity primary key,
+  name         text not null,
+  email        text not null,
+  phone        text not null,
+  company_name text,
+  note         text,
+  created_at   timestamptz not null default now()
+);
+```
+
+Row-level security should be on, with no public policy — the route uses the
+service-role key server-side and the key is never exposed to the client.
+
+Field limits are enforced in two places and must stay in sync: `LIMITS` in
+`app/api/leads/route.ts` and `validate()` in
+`components/sections/ContactInvite.tsx`.
+
+If Supabase is not configured the route returns **503** and the form shows the
+email fallback from `NEXT_PUBLIC_CONTACT_EMAIL`. It never pretends to have
+saved a lead it dropped.
+
+## Assets
+
+| Path | Contents |
+|---|---|
+| `public/videos/` | `hero.mp4` (hero plate + film 01), `reel.mp4` (film 04) |
+| `public/logo/` | `monogram.png` — the gold N/B mark used in the navbar |
+| `public/favicon_io/` | Favicons, touch icon, web manifest |
+| `public/founders/` | Founder portraits |
+| `public/testimonials/` | Client portraits |
+| `public/icons/` | Proof-stat icons |
+
+Both videos need compressed web masters before launch — see **Known gaps** in
+the [README](../README.md#known-gaps).

@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --header-h: 72px;
+    /* Mirrors EASE_FILM in lib/motion.ts — keep the two in sync. */
+    --ease-film: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Sections are anchor targets; keep the sticky navbar from covering headings. */
+    scroll-padding-top: var(--header-h);
+  }
+
+  body {
+    @apply bg-stage text-ink font-display antialiased;
+    /* No horizontal overflow at any breakpoint (docs/DESIGN_SYSTEM.md §Responsive). */
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    @apply bg-gold text-stage;
+  }
+
+  /* Conventional, visible affordance — cinematic must not mean undiscoverable. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-gold ring-offset-2 ring-offset-stage;
+  }
+}
+
+@layer components {
+  /* Mono metadata label: "01 — THE PREMISE". The lab-notebook layer. */
+  .label {
+    @apply font-mono text-label uppercase text-muted;
+  }
+
+  /* Page gutter. One definition so every section lines up on the same grid. */
+  .frame {
+    @apply mx-auto w-full max-w-frame px-5 sm:px-8 lg:px-12;
+  }
+
+  /* Hairline rule — never a card border. */
+  .rule {
+    @apply border-t border-line;
+  }
+
+  /*
+   * The hero title card, animated in CSS rather than JS.
+   *
+   * The headline is the page's LCP element, so its entrance must not wait for
+   * framer-motion to hydrate — and it must still resolve if scripting is off.
+   * `forwards` plus the global reduced-motion override means a reduced-motion
+   * visitor simply sees the finished frame.
+   */
+  .title-line {
+    @apply block overflow-hidden;
+    padding-bottom: 0.06em;
+  }
+
+  .title-line > * {
+    display: block;
+    transform: translateY(110%);
+    animation: title-in 1s var(--ease-film) both;
+  }
+
+  .fade-in {
+    opacity: 0;
+    animation: fade-in 0.68s var(--ease-film) both;
+  }
+}
+
+@keyframes title-in {
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+  /* Track motion: a slow scroll-linked push on background plates only. */
+  .plate-track {
+    will-change: transform;
+  }
+}
+
+/* Motion is decorative here; honour the OS setting everywhere (doc §6). */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
