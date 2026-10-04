@@ -1,5 +1,5 @@
 import { Instagram, Linkedin, Youtube, type LucideIcon } from 'lucide-react';
-import { navLinks, site, socialLinks, type SocialIcon } from '@/content/site';
+import { navLinks, site, socialLinks, studioLink, type SocialIcon } from '@/content/site';
 
 const icons: Record<SocialIcon, LucideIcon> = {
   youtube: Youtube,
@@ -28,6 +28,14 @@ export function Footer() {
             className="label flex min-h-[44px] items-center text-muted transition-colors hover:text-gold"
           >
             Start
+          </a>
+          <a
+            href={studioLink.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="label flex min-h-[44px] items-center text-muted transition-colors hover:text-gold"
+          >
+            {studioLink.label}
           </a>
         </nav>
 

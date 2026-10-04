@@ -68,17 +68,25 @@ the grid draws its own dividers and does not depend on the count.
 
 `POST /api/leads` validates and writes to a Supabase `leads` table:
 
+This is the **existing** table, carried over unchanged from the old site — the
+new form writes to the same Supabase project. Do not recreate it.
+
 ```sql
-create table leads (
-  id           bigint generated always as identity primary key,
-  name         text not null,
-  email        text not null,
-  phone        text not null,
-  company_name text,
+create table if not exists leads (
+  id           uuid primary key default gen_random_uuid(),
+  name         varchar(100) not null,
+  email        varchar(100) not null,
+  phone        varchar(18)  not null,
+  company_name varchar(150),
   note         text,
-  created_at   timestamptz not null default now()
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
 );
 ```
+
+The route inserts only `name`, `email`, `phone`, `company_name` and `note`;
+`id`, `created_at` and `updated_at` are left to the database. That is what makes
+it drop-in compatible with the rows the old site wrote.
 
 Row-level security should be on, with no public policy — the route uses the
 service-role key server-side and the key is never exposed to the client.

@@ -1,10 +1,10 @@
 'use client';
 
 import Image from 'next/image';
-import { Menu, X } from 'lucide-react';
+import { ArrowUpRight, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { FilmButton } from '@/components/primitives/FilmButton';
-import { navLinks, site } from '@/content/site';
+import { navLinks, site, studioLink } from '@/content/site';
 import { cn } from '@/lib/cn';
 
 /**
@@ -72,6 +72,18 @@ export function Navbar() {
               {link.label}
             </a>
           ))}
+          {/* Leaves the site, so it carries an outbound mark rather than
+              looking like another section anchor. */}
+          <a
+            href={studioLink.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="label flex min-h-[44px] items-center gap-1 text-muted transition-colors hover:text-gold"
+          >
+            {studioLink.label}
+            <ArrowUpRight size={12} />
+          </a>
+
           <FilmButton href="#start" className="px-5">
             Start a film
           </FilmButton>
@@ -100,6 +112,16 @@ export function Navbar() {
               {link.label}
             </a>
           ))}
+          <a
+            href={studioLink.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={close}
+            className="label flex min-h-[52px] items-center gap-1 border-b border-line text-muted"
+          >
+            {studioLink.label}
+            <ArrowUpRight size={12} />
+          </a>
           <a
             href="#start"
             onClick={close}

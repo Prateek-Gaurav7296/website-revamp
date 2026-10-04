@@ -29,6 +29,20 @@ export const navLinks = [
   { id: 'team', label: 'Team' },
 ] as const;
 
+/**
+ * NB Studio is a separate application on its own subdomain and in its own
+ * repository — it is not a page in this project. The old site linked to it
+ * from the header ("Take me to NB studio") and this one keeps that entry point.
+ *
+ * Note the host: the shipped header used `studio.` (singular) while the old
+ * deployment notes describe `studios.` (plural). This follows the link that
+ * was actually live. Confirm before launch — see the README.
+ */
+export const studioLink = {
+  label: 'NB Studio',
+  href: 'https://studio.thenextberrylabs.com/',
+} as const;
+
 export const socialLinks = [
   { label: 'YouTube', href: 'https://www.youtube.com/@NextBerryLabs/playlists', icon: 'youtube' },
   { label: 'Instagram', href: 'https://www.instagram.com/nextberrylabs', icon: 'instagram' },
